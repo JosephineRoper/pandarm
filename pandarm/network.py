@@ -46,12 +46,12 @@ class Network:
         table.
     edge_geom : bool | gpd.GeometryArray | gpd.GeoSeries, default is None
         Array-like (typically a GeoSeries) of geometries representing the
-        geometric shape of each 
+        geometric shape of each
     crs : str | pyproj.CRS, default is None
         coordinate system in which node x and y coordinates (and edge_geom, if
         provided) are stored. If None, it is assumed the coordinates are
         geographic (i.e. WGS84, EPSG:4326)
-        
+
     """
 
     def __init__(
@@ -66,9 +66,7 @@ class Network:
         crs=None,
     ):
         if crs is None:
-            warnings.warn(
-                    "No CRS was passed to geometry input; assuming geographic coordinates"
-                )
+            warnings.warn("No CRS was passed to geometry input; assuming geographic coordinates")
             crs = 4326
         nodes_df = gpd.GeoDataFrame(
             {"x": node_x, "y": node_y},
@@ -80,7 +78,7 @@ class Network:
 
         self.nodes_df = nodes_df
         self.edges_df = edges_df
-        self.crs= crs
+        self.crs = crs
 
         self.impedance_names = list(edge_weights.columns)
         self.variable_names = set()
@@ -203,7 +201,7 @@ class Network:
         """
         return ph5.network_from_pandas_hdf5(cls, filename)
 
-    def save_hdf5(self, filename, rm_nodes=None):
+    def save_hdf5(self, filename, rm_nodes=None, complevel=None, complib=None):
         """
         Save network data to a Pandas HDF5 file.
 
@@ -218,7 +216,7 @@ class Network:
             be saved as part of the Network.
 
         """
-        ph5.network_to_pandas_hdf5(self, filename, rm_nodes)
+        ph5.network_to_pandas_hdf5(self, filename, rm_nodes, complevel=complevel, complib=complib)
 
     def _node_indexes(self, node_ids):
         # for some reason, merge is must faster than .loc
