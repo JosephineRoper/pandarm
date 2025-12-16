@@ -3,19 +3,25 @@ channels:
   - conda-forge
 dependencies:
   - python=3.14
+  - cxx-compiler  # platform-appropriate compiler w/ OpenMP
+  - geopandas >=1.1
   - numpy >=2
   - pandas >=2
-  - scikit-learn >=0.18
   - pytables >=3.1
-  - geopandas >=1.1
-  - cxx-compiler  # platform-appropriate compiler w/ OpenMP
+  - scikit-learn >=0.18
+
+  # plus
   - osmnx
 
-  # testing, etc
+  # dev
   - codecov
   - pytest
-  - pytest-mpl
   - pytest-cov
-  - pytest-xdist
-  - twine
 
+  # docs
+  - myst-parser
+  - nbsphinx
+  - numpydoc
+  - sphinx
+  - sphinxcontrib-bibtex
+  - sphinx_bootstrap_theme
