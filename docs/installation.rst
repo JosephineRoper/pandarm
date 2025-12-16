@@ -44,7 +44,7 @@ If you prefer not to use Conda, you can skip the ``clang`` and ``llvm-openmp`` p
 
 The default C++ compiler on Macs doesn't support OpenMP, though, meaning that pandarm won't be able to use multithreading.
 
-You can set the ``CC`` environment variable to specify a compiler of your choice. See writeup in `PR #137 <https://github.com/UDST/pandarm/pull/137>`_ for discussion of this. If you need to make additional modifications, you can edit the compilation script in your local copy of ``setup.py``.
+You can set the ``CC`` environment variable to specify a compiler of your choice. See writeup in the original pandana repository at `PR #137 <https://github.com/UDST/pandana/pull/137>`_ for discussion of this. If you need to make additional modifications, you can edit the compilation script in your local copy of ``setup.py``.
 
 
 Multithreading
