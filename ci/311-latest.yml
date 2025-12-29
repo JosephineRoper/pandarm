@@ -2,13 +2,13 @@ name: test
 channels:
   - conda-forge
 dependencies:
-  - python=3.12
+  - python=3.11
   - cxx-compiler  # platform-appropriate compiler w/ OpenMP
-  - geopandas >=1.1
-  - numpy >=2
-  - pandas >=2
-  - pytables >=3.1
-  - scikit-learn >=0.18
+  - geopandas
+  - numpy
+  - pandas
+  - pytables
+  - scikit-learn
 
   # plus
   - osmnx

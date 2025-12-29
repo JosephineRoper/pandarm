@@ -12,11 +12,11 @@ description = "The Pandas Routing Machine"
 readme = "README.md"
 keywords = ["routing, network analysis, accessibility, shortest paths, isochrone"]
 dependencies = [
-    "geopandas",
-    "numpy >=2",
-    "pandas >=2",
-    "scikit-learn >=0.18",
-    "tables >=3.1",
+    "geopandas >=1.1",
+    "numpy >=1.26",
+    "pandas >=2.2",
+    "scikit-learn >=1.4",
+    "tables >=3.10",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -36,7 +36,7 @@ exclude = ["*.tests", "*.tests.*", "tests.*", "tests"]
 
 [project.optional-dependencies]
 plus = [
-    "osmnx",
+    "osmnx >=2.0",
 ]
 dev = [
     "codecov",
