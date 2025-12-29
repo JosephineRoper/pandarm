@@ -12,7 +12,7 @@
      strategy:
        matrix:
          os: ['ubuntu-latest']
-         environment-file: [ci/314.yml]
+         environment-file: [ci/314-latest.yml]
          experimental: [false]
      defaults:
        run:

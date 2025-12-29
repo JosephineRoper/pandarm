@@ -1,0 +1,19 @@
+name: test
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - cxx-compiler  # platform-appropriate compiler w/ OpenMP
+  - geopandas =1.1
+  - numpy =1.26
+  - pandas =2.2
+  - pytables =3.10
+  - scikit-learn =1.4
+
+  # plus
+  - osmnx =2.0
+
+  # dev
+  - codecov
+  - pytest
+  - pytest-cov
