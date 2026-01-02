@@ -143,7 +143,7 @@ class Network:
             an instantiated pandana Network object
         input_crs : int, optional
             the coordinate system used in the Network.node_df dataframe. Typically
-            these data are collected in Lon/Lat, so the default 4326. If None, but 
+            these data are collected in Lon/Lat, so the default 4326. If None, but
             there is a geometry column present in the Network, input CRS is inferred
         output_crs : int, str, or pyproj.crs.CRS, required
             EPSG code or pyproj.crs.CRS object of the output coordinate system
@@ -601,7 +601,16 @@ class Network:
 
     def get_node_ids(self, x_col, y_col, mapping_distance=None):
         """
-        Assign node_ids to data specified by x_col and y_col.
+        Assign ID of the nearest node to data specified by x_col and y_col.
+
+        Returns a Pandas Series of ``node_ids`` for each x, y in the
+        input data, representing the nearest node in the Euclidean space.
+        The index is the same as the indexes of the
+        x, y input data, and the values are the mapped ``node_ids``.
+        If mapping distance is not passed and if there are no NaNs in the
+        x, y data, this will be the same length as the x, y data.
+        If the mapping is imperfect, this function returns all the
+        input x, y's that were successfully mapped to ``node_ids``.
 
         Parameters
         ----------
@@ -610,25 +619,17 @@ class Network:
             location of dataset.
         y_col : pandas.Series (float)
             A Pandas Series where values specify the y (e.g. latitude)
-            location of dataset.  x_col and y_col should use the same index.
+            location of dataset.  ``x_col`` and ``y_col`` should use the same index.
         mapping_distance : float, optional
-            The maximum distance that will be considered a match between the
-            x, y data and the nearest node in the network.  This will usually
-            be a distance unit in meters however if you have customized the
-            impedance this could be in other units such as utility or time
-            etc. If not specified, every x, y coordinate will be mapped to
-            the nearest node.
+            The maximum distance in Euclidean space that will be considered a match
+            between the x, y data and the nearest node in the network. This will be
+            a distance unit in the units of x, y and node coordinates (usually meters).
+            If not specified, every x, y coordinate will be mapped to the nearest node.
 
         Returns
         -------
         node_ids : pandas.Series (int)
-            Returns a Pandas Series of node_ids for each x, y in the
-            input data. The index is the same as the indexes of the
-            x, y input data, and the values are the mapped node_ids.
-            If mapping distance is not passed and if there are no nans in the
-            x, y data, this will be the same length as the x, y data.
-            If the mapping is imperfect, this function returns all the
-            input x, y's that were successfully mapped to node_ids.
+
         """
         xys = pd.DataFrame({"x": x_col, "y": y_col})
 
