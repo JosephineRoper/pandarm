@@ -1,0 +1,27 @@
+name: test
+channels:
+  - conda-forge
+dependencies:
+  - python=3.14
+  - cxx-compiler  # platform-appropriate compiler w/ OpenMP
+  - geopandas
+  - numpy
+  - pandas
+  - pytables
+  - scikit-learn
+
+  # plus
+  - osmnx
+
+  # dev
+  - codecov
+  - pytest
+  - pytest-cov
+
+  # docs
+  - myst-parser
+  - nbsphinx
+  - numpydoc
+  - sphinx
+  - sphinxcontrib-bibtex
+  - sphinx_bootstrap_theme

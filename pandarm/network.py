@@ -1,13 +1,14 @@
 import warnings
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
-import geopandas as gpd
 from sklearn.neighbors import KDTree
 
 from .cyaccess import cyaccess
 from .loaders import pandash5 as ph5
-from .loaders.osm import get_network_from_gdf as _net_from_gdf, project_network as _project_network
+from .loaders.osm import get_network_from_gdf as _net_from_gdf
+from .loaders.osm import project_network as _project_network
 
 
 class Network:
@@ -43,20 +44,47 @@ class Network:
         network. If twoway = False, it is assumed that travel can only occur
         in the explicit direction indicated by the from and to ID in the edge
         table.
+    edge_geom : bool | gpd.GeometryArray | gpd.GeoSeries, default is None
+        Array-like (typically a GeoSeries) of geometries representing the
+        geometric shape of each
+    crs : str | pyproj.CRS, default is None
+        coordinate system in which node x and y coordinates (and edge_geom, if
+        provided) are stored. If None, it is assumed the coordinates are
+        geographic (i.e. WGS84, EPSG:4326)
 
     """
 
-    def __init__(self, node_x, node_y, edge_from, edge_to, edge_weights, twoway=True):
-        nodes_df = pd.DataFrame({"x": node_x, "y": node_y})
+    def __init__(
+        self,
+        node_x,
+        node_y,
+        edge_from,
+        edge_to,
+        edge_weights,
+        twoway=True,
+        edge_geom=None,
+        crs=None,
+    ):
+        if crs is None:
+            warnings.warn("No CRS was passed to geometry input; assuming geographic coordinates")
+            crs = 4326
+        nodes_df = gpd.GeoDataFrame(
+            {"x": node_x, "y": node_y},
+            geometry=gpd.points_from_xy(node_x, node_y, crs=crs),
+        )
         edges_df = pd.DataFrame({"from": edge_from, "to": edge_to}).join(edge_weights)
+        if edge_geom is not None:
+            edges_df = gpd.GeoDataFrame(edges_df, geometry=edge_geom, crs=crs)
 
         self.nodes_df = nodes_df
         self.edges_df = edges_df
+        self.crs = crs
 
         self.impedance_names = list(edge_weights.columns)
         self.variable_names = set()
         self.poi_category_names = []
         self.poi_category_indexes = {}
+        self.max_pois = {}
 
         # this maps IDs to indexes which are used internally
         # this is a constant source of headaches, but all node identifiers
@@ -72,7 +100,7 @@ class Network:
 
         self.net = cyaccess(
             self.node_idx.values,
-            nodes_df.astype("double").values,
+            nodes_df[["x", "y"]].astype("double").values,
             edges.values,
             edges_df[edge_weights.columns].transpose().astype("double").values,
             twoway,
@@ -80,11 +108,10 @@ class Network:
 
         self._twoway = twoway
 
-        self.kdtree = KDTree(nodes_df.values)
+        self.kdtree = KDTree(nodes_df[["x", "y"]].values)
 
     @classmethod
     def from_gdf(
-
         cls, gdf, network_type="walk", twoway=False, add_travel_times=False, default_speeds=None
     ):
         """Create a pandana.Network object from a geodataframe (via OSMnx graph).
@@ -158,7 +185,6 @@ class Network:
             input_crs = self.nodes_df.crs
         return _project_network(self, output_crs, input_crs)
 
-
     @classmethod
     def from_hdf5(cls, filename):
         """
@@ -175,7 +201,7 @@ class Network:
         """
         return ph5.network_from_pandas_hdf5(cls, filename)
 
-    def save_hdf5(self, filename, rm_nodes=None):
+    def save_hdf5(self, filename, rm_nodes=None, complevel=None, complib=None):
         """
         Save network data to a Pandas HDF5 file.
 
@@ -190,7 +216,7 @@ class Network:
             be saved as part of the Network.
 
         """
-        ph5.network_to_pandas_hdf5(self, filename, rm_nodes)
+        ph5.network_to_pandas_hdf5(self, filename, rm_nodes, complevel=complevel, complib=complib)
 
     def _node_indexes(self, node_ids):
         # for some reason, merge is must faster than .loc
@@ -439,7 +465,7 @@ class Network:
         self.variable_names.add(name)
 
         self.net.initialize_access_var(
-            name.encode("utf-8"),
+            name,
             df.node_idx.values.astype(np.int64),
             df[name].values.astype("double"),
         )
@@ -591,9 +617,9 @@ class Network:
 
         res = self.net.get_all_aggregate_accessibility_variables(
             distance,
-            name.encode("utf-8"),
-            type.encode("utf-8"),
-            decay.encode("utf-8"),
+            name,
+            type,
+            decay,
             imp_num,
         )
 
@@ -767,7 +793,7 @@ class Network:
         if category not in self.poi_category_names:
             self.poi_category_names.append(category)
 
-        self.max_pois = maxitems
+        self.max_pois[category] = maxitems
 
         node_ids = self.get_node_ids(x_col, y_col, mapping_distance=mapping_distance)
 
@@ -775,9 +801,7 @@ class Network:
 
         node_idx = self._node_indexes(node_ids)
 
-        self.net.initialize_category(
-            maxdist, maxitems, category.encode(encoding="utf-8"), node_idx.values
-        )
+        self.net.initialize_category(maxdist, maxitems, category, node_idx.values)
 
     def nearest_pois(
         self,
@@ -838,13 +862,16 @@ class Network:
             max_distance = distance
 
         if category not in self.poi_category_names:
-            assert 0, "Need to call set_pois for this category"
+            raise ValueError("Need to call set_pois for this category")
+        if num_pois > self.max_pois[category]:
+            raise ValueError(
+                f"The maximum number of POIs for {category} is {self.max_pois[category]}."
+                + "If you need more, then increase the maxitems in another call to `set_pois`"
+            )
 
         imp_num = self._imp_name_to_num(imp_name)
 
-        dists, poi_ids = self.net.find_all_nearest_pois(
-            distance, num_pois, category.encode("utf-8"), imp_num
-        )
+        dists, poi_ids = self.net.find_all_nearest_pois(distance, num_pois, category, imp_num)
         dists[dists == -1] = max_distance
 
         df = pd.DataFrame(dists, index=self.node_ids)
