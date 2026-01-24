@@ -1,5 +1,3 @@
-import os.path
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -9,12 +7,10 @@ import pandarm.network as pdna
 from numpy.testing import assert_allclose
 from pandas.testing import assert_index_equal
 
-from pandarm.testing import skipifci
-
 
 @pytest.fixture(scope="module")
 def sample_osm(request):
-    store = pd.HDFStore(os.path.join(os.path.dirname(__file__), "osm_sample.h5"), "r")
+    store = pd.HDFStore(pytest.h5_osm_sample, "r")
     nodes, edges = store.nodes, store.edges
 
     with pytest.no_crs_warning:
@@ -33,7 +29,7 @@ def sample_osm(request):
 # initialize a second network
 @pytest.fixture(scope="module")
 def second_sample_osm(request):
-    store = pd.HDFStore(os.path.join(os.path.dirname(__file__), "osm_sample.h5"), "r")
+    store = pd.HDFStore(pytest.h5_osm_sample, "r")
     nodes, edges = store.nodes, store.edges
 
     with pytest.no_crs_warning:
@@ -133,7 +129,7 @@ def test_agg_variables_accuracy(sample_osm):
 
 
 def test_non_integer_nodeids(request):
-    store = pd.HDFStore(os.path.join(os.path.dirname(__file__), "osm_sample.h5"), "r")
+    store = pd.HDFStore(pytest.h5_osm_sample, "r")
     nodes, edges = store.nodes, store.edges
 
     # convert to string!
@@ -281,7 +277,7 @@ def test_shortest_paths(sample_osm):
     try:
         vec_paths = sample_osm.shortest_paths(nodes[0:51], nodes[50:100])
         assert 0
-    except ValueError as e:
+    except ValueError:
         pass
 
 
@@ -302,18 +298,18 @@ def test_shortest_path_lengths(sample_osm):
     try:
         lens = sample_osm.shortest_path_lengths(nodes[0:51], nodes[50:100])
         assert 0
-    except ValueError as e:
+    except ValueError:
         pass
 
 
 def test_pois_a(sample_osm):
-
     net = sample_osm
     x, y = random_x_y(sample_osm, 100)
     x.index = ["lab%d" % i for i in range(len(x))]
     y.index = x.index
     net.set_pois("restaurants", 2000, 10, x, y)
-    d = net.nearest_pois(2000, "restaurants", num_pois=10, include_poi_ids=True)
+    net.nearest_pois(2000, "restaurants", num_pois=10, include_poi_ids=True)
+
 
 def test_pois_b(sample_osm):
     net = sample_osm
@@ -324,6 +320,7 @@ def test_pois_b(sample_osm):
     net.set_pois("restaurants", 2000, 10, x_col=x, y_col=y.astype(float))
     net.nearest_pois(2000, "restaurants", num_pois=10)
 
+
 def test_pois_c(sample_osm):
     net = sample_osm
     ssize = 50
@@ -332,6 +329,7 @@ def test_pois_c(sample_osm):
     net.set_pois("restaurants", 2000, 10, x_col=x, y_col=y)
     with pytest.raises(ValueError):
         net.nearest_pois(2000, "restaurants", num_pois=11)
+
 
 def test_pois2(second_sample_osm):
     net2 = second_sample_osm
@@ -346,7 +344,7 @@ def test_pois2(second_sample_osm):
     net2.nearest_pois(2000, "restaurants", num_pois=10)
 
 
-def test_pois_pandana3(second_sample_osm):
+def test_pois_pandarm3(second_sample_osm):
     net2 = second_sample_osm
 
     ssize = 50
@@ -359,7 +357,7 @@ def test_pois_pandana3(second_sample_osm):
     net2.nearest_pois(2000, "restaurants", num_pois=10)
 
 
-def test_pois_pandana3_pos_args(second_sample_osm):
+def test_pois_pandarm3_pos_args(second_sample_osm):
     net2 = second_sample_osm
 
     ssize = 50
@@ -392,8 +390,6 @@ def test_sorted_pois(sample_osm):
 
 
 def test_repeat_pois(sample_osm):
-    net = sample_osm
-
     def get_nearest_nodes(x, y, x2=None, y2=None, n=2):
         coords_dict = [{"x": x, "y": y, "var": 1} for i in range(2)]
         if x2 and y2:
@@ -409,6 +405,7 @@ def test_repeat_pois(sample_osm):
 
     test1 = get_nearest_nodes(-122.31, 47.60)
     test2 = get_nearest_nodes(-122.254116, 37.869361)
+    assert not test1.equals(test2)
     # Same coords as the first call, should yield same result
     test3 = get_nearest_nodes(-122.31, 47.60)
     assert test1.equals(test3)
@@ -427,12 +424,11 @@ def test_nodes_in_range(sample_osm):
 
     np.random.seed(0)
     ssize = 10
-    x, y = random_x_y(net, 10)
+    x, y = random_x_y(net, ssize)
     snaps = net.get_node_ids(x, y)
 
-
     test1 = net.nodes_in_range(snaps, 1)
-    net.precompute(10)
+    net.precompute(ssize)
     test5 = net.nodes_in_range(snaps, 5)
     test11 = net.nodes_in_range(snaps, 11)
     assert test1.weight.max() == 1
@@ -444,9 +440,7 @@ def test_nodes_in_range(sample_osm):
         UserWarning,
         match="Unsigned integer: shortest path distance is trying to be calculated",
     ):
-        all_distances = net.shortest_path_lengths(
-            [focus_id] * len(net.node_ids), net.node_ids
-        )
+        all_distances = net.shortest_path_lengths([focus_id] * len(net.node_ids), net.node_ids)
     all_distances = np.asarray(all_distances)
     assert (all_distances <= 1).sum() == len(test1.query("source == {}".format(focus_id)))
     assert (all_distances <= 5).sum() == len(test5.query("source == {}".format(focus_id)))

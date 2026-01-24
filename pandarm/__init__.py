@@ -5,3 +5,7 @@ from .network import Network
 
 with contextlib.suppress(PackageNotFoundError):
     __version__ = version("pandarm")
+
+__all__ = [
+    "Network",
+]

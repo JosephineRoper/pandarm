@@ -58,7 +58,7 @@ all = [
 
 
 [tool.ruff]
-ignore = ["E226","E402"]
+lint.ignore = ["E226","E402"]
 line-length = 100
 
 [tool.coverage.run]

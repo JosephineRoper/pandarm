@@ -1,13 +1,9 @@
-import os
-import tempfile
-
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
 
 from pandarm import Network
 from pandarm.loaders import pandash5 as ph5
-from pandarm.testing import skipifci
 
 
 @pytest.fixture(scope="module")
@@ -42,9 +38,7 @@ def two_way():
 @pytest.fixture(scope="module")
 def network(nodes, edges, edge_weights, two_way):
     with pytest.no_crs_warning:
-        return Network(
-            nodes["x"], nodes["y"], edges["from"], edges["to"], edge_weights, two_way
-        )
+        return Network(nodes["x"], nodes["y"], edges["from"], edges["to"], edge_weights, two_way)
 
 
 @pytest.fixture(scope="module")
@@ -55,19 +49,6 @@ def edges_df(edges, edge_weights):
 @pytest.fixture(scope="module")
 def rm_nodes():
     return [0, 7, 6]
-
-
-@pytest.fixture
-def tmpfile(request):
-    fname = tempfile.NamedTemporaryFile().name
-
-    def cleanup():
-        if os.path.exists(fname):
-            os.remove(fname)
-
-    request.addfinalizer(cleanup)
-
-    return fname
 
 
 def test_remove_nodes(network, rm_nodes):
