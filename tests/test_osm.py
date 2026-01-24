@@ -1,4 +1,4 @@
-import os
+import pathlib
 import tempfile
 
 import numpy as np
@@ -14,11 +14,11 @@ from pandas.testing import assert_frame_equal
 
 @pytest.fixture
 def tmpfile(request):
-    fname = tempfile.NamedTemporaryFile().name
+    fname = pathlib.Path(tempfile.NamedTemporaryFile().name)
 
     def cleanup():
-        if os.path.exists(fname):
-            os.remove(fname)
+        if fname.exists():
+            fname.unlink()
 
     request.addfinalizer(cleanup)
 

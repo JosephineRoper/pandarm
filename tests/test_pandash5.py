@@ -1,4 +1,4 @@
-import os
+import pathlib
 import tempfile
 
 import pandas as pd
@@ -55,11 +55,11 @@ def rm_nodes():
 
 @pytest.fixture
 def tmpfile(request):
-    fname = tempfile.NamedTemporaryFile().name
+    fname = pathlib.Path(tempfile.NamedTemporaryFile().name)
 
     def cleanup():
-        if os.path.exists(fname):
-            os.remove(fname)
+        if fname.exists():
+            fname.unlink()
 
     request.addfinalizer(cleanup)
 

@@ -1,4 +1,4 @@
-import os.path
+import pathlib
 
 import numpy as np
 import pandas as pd
@@ -12,7 +12,7 @@ from pandas.testing import assert_index_equal
 
 @pytest.fixture(scope="module")
 def sample_osm(request):
-    store = pd.HDFStore(os.path.join(os.path.dirname(__file__), "osm_sample.h5"), "r")
+    store = pd.HDFStore(pathlib.Path(__file__).parent / "osm_sample.h5", "r")
     nodes, edges = store.nodes, store.edges
 
     net = pdna.Network(nodes.x, nodes.y, edges["from"], edges.to, edges[["weight"]])
@@ -30,7 +30,7 @@ def sample_osm(request):
 # initialize a second network
 @pytest.fixture(scope="module")
 def second_sample_osm(request):
-    store = pd.HDFStore(os.path.join(os.path.dirname(__file__), "osm_sample.h5"), "r")
+    store = pd.HDFStore(pathlib.Path(__file__).parent / "osm_sample.h5", "r")
     nodes, edges = store.nodes, store.edges
     net = pdna.Network(nodes.x, nodes.y, edges["from"], edges.to, edges[["weight"]])
 
@@ -128,7 +128,7 @@ def test_agg_variables_accuracy(sample_osm):
 
 
 def test_non_integer_nodeids(request):
-    store = pd.HDFStore(os.path.join(os.path.dirname(__file__), "osm_sample.h5"), "r")
+    store = pd.HDFStore(pathlib.Path(__file__).parent / "osm_sample.h5", "r")
     nodes, edges = store.nodes, store.edges
 
     # convert to string!

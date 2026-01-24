@@ -1,16 +1,17 @@
 # test direct use of cyccess (c++/cython extension)
 
+import pathlib
+
 import pandas as pd
 import numpy as np
 import pytest
-import os
 from numpy.testing import assert_almost_equal
 from pandarm.cyaccess import cyaccess
 
 
 @pytest.fixture(scope="module")
 def nodes_and_edges(request):
-    store = pd.HDFStore(os.path.join(os.path.dirname(__file__), "osm_sample.h5"), "r")
+    store = pd.HDFStore(pathlib.Path(__file__).parent / "osm_sample.h5", "r")
     nodes = store.nodes
     edges = store.edges[["from", "to"]]
     edge_weights = store.edges[["weight"]]
