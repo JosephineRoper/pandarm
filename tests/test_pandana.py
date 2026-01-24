@@ -17,7 +17,8 @@ def sample_osm(request):
     store = pd.HDFStore(os.path.join(os.path.dirname(__file__), "osm_sample.h5"), "r")
     nodes, edges = store.nodes, store.edges
 
-    net = pdna.Network(nodes.x, nodes.y, edges["from"], edges.to, edges[["weight"]])
+    with pytest.no_crs_warning:
+        net = pdna.Network(nodes.x, nodes.y, edges["from"], edges.to, edges[["weight"]])
 
     net.precompute(2000)
 
@@ -34,7 +35,9 @@ def sample_osm(request):
 def second_sample_osm(request):
     store = pd.HDFStore(os.path.join(os.path.dirname(__file__), "osm_sample.h5"), "r")
     nodes, edges = store.nodes, store.edges
-    net = pdna.Network(nodes.x, nodes.y, edges["from"], edges.to, edges[["weight"]])
+
+    with pytest.no_crs_warning:
+        net = pdna.Network(nodes.x, nodes.y, edges["from"], edges.to, edges[["weight"]])
 
     net.precompute(2000)
 
@@ -138,7 +141,8 @@ def test_non_integer_nodeids(request):
     edges["from"] = edges["from"].astype("str")
     edges["to"] = edges["to"].astype("str")
 
-    net = pdna.Network(nodes.x, nodes.y, edges["from"], edges.to, edges[["weight"]])
+    with pytest.no_crs_warning:
+        net = pdna.Network(nodes.x, nodes.y, edges["from"], edges.to, edges[["weight"]])
 
     def fin():
         store.close()
@@ -426,6 +430,7 @@ def test_nodes_in_range(sample_osm):
     x, y = random_x_y(net, 10)
     snaps = net.get_node_ids(x, y)
 
+
     test1 = net.nodes_in_range(snaps, 1)
     net.precompute(10)
     test5 = net.nodes_in_range(snaps, 5)
@@ -435,7 +440,13 @@ def test_nodes_in_range(sample_osm):
     assert test11.weight.max() == 11
 
     focus_id = snaps[0]
-    all_distances = net.shortest_path_lengths([focus_id] * len(net.node_ids), net.node_ids)
+    with pytest.warns(
+        UserWarning,
+        match="Unsigned integer: shortest path distance is trying to be calculated",
+    ):
+        all_distances = net.shortest_path_lengths(
+            [focus_id] * len(net.node_ids), net.node_ids
+        )
     all_distances = np.asarray(all_distances)
     assert (all_distances <= 1).sum() == len(test1.query("source == {}".format(focus_id)))
     assert (all_distances <= 5).sum() == len(test5.query("source == {}".format(focus_id)))
