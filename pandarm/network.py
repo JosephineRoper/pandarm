@@ -1,3 +1,4 @@
+import importlib
 import warnings
 
 import geopandas as gpd
@@ -710,15 +711,10 @@ class Network:
         ax : matplotlib.Axes
 
         """
-        try:
-            ModuleNotFoundError  # Python 3.6+
-        except NameError:
-            ModuleNotFoundError = ImportError
 
-        try:
-            import matplotlib
+        if importlib.util.find_spec("matplotlib"):
             import matplotlib.pyplot as plt
-        except (ModuleNotFoundError, RuntimeError):
+        else:
             raise ModuleNotFoundError("pandarm's network.plot() requires Matplotlib")
 
         fig_kwargs = fig_kwargs or {"figsize": (10, 8)}
@@ -742,7 +738,7 @@ class Network:
         elif plot_type == "hexbin":
             plot = plt.hexbin(x, y, C=data.values, **plot_kwargs)
 
-        colorbar = plt.colorbar(plot, **cbar_kwargs)
+        colorbar = plt.colorbar(plot, **cbar_kwargs)  # noqa: F841 - never used
 
         plt.show()
 

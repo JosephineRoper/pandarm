@@ -102,7 +102,7 @@ def get_network_from_gdf(
         node_y=n["y"],
         twoway=twoway,
         edge_geom=e.geometry,
-        crs=output_crs 
+        crs=output_crs,
     )
     return net
 
