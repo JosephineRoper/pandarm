@@ -28,7 +28,8 @@ def tmpfile(request):
 @pytest.fixture(scope="module")
 def osm_network():
     irvine = ox.geocode_to_gdf("irvine, ca")
-    network = pdna.Network.from_gdf(irvine)
+    with pytest.warns(UserWarning, match="Geometry is in a geographic CRS"):
+        network = pdna.Network.from_gdf(irvine)
     return network
 
 
@@ -46,6 +47,7 @@ def test_save_hdf_with_geoms(osm_network, tmpfile):
     with pd.HDFStore(tmpfile) as store:
         assert store["nodes"].shape[0] >= 42691
 
-    roundtrip_net = pdna.Network.from_hdf5(tmpfile)
+    with pytest.no_crs_warning:
+        roundtrip_net = pdna.Network.from_hdf5(tmpfile)
 
     assert_frame_equal(osm_network.nodes_df, roundtrip_net.nodes_df)
