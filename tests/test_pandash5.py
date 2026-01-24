@@ -7,7 +7,6 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 
 from pandarm import Network
 from pandarm.loaders import pandash5 as ph5
-from pandarm.testing import skipifci
 
 
 @pytest.fixture(scope="module")

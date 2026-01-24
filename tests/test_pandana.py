@@ -9,8 +9,6 @@ import pandarm.network as pdna
 from numpy.testing import assert_allclose
 from pandas.testing import assert_index_equal
 
-from pandarm.testing import skipifci
-
 
 @pytest.fixture(scope="module")
 def sample_osm(request):
@@ -277,7 +275,7 @@ def test_shortest_paths(sample_osm):
     try:
         vec_paths = sample_osm.shortest_paths(nodes[0:51], nodes[50:100])
         assert 0
-    except ValueError as e:
+    except ValueError:
         pass
 
 
@@ -298,7 +296,7 @@ def test_shortest_path_lengths(sample_osm):
     try:
         lens = sample_osm.shortest_path_lengths(nodes[0:51], nodes[50:100])
         assert 0
-    except ValueError as e:
+    except ValueError:
         pass
 
 
@@ -309,7 +307,7 @@ def test_pois_a(sample_osm):
     x.index = ["lab%d" % i for i in range(len(x))]
     y.index = x.index
     net.set_pois("restaurants", 2000, 10, x, y)
-    d = net.nearest_pois(2000, "restaurants", num_pois=10, include_poi_ids=True)
+    net.nearest_pois(2000, "restaurants", num_pois=10, include_poi_ids=True)
 
 def test_pois_b(sample_osm):
     net = sample_osm
@@ -388,7 +386,6 @@ def test_sorted_pois(sample_osm):
 
 
 def test_repeat_pois(sample_osm):
-    net = sample_osm
 
     def get_nearest_nodes(x, y, x2=None, y2=None, n=2):
         coords_dict = [{"x": x, "y": y, "var": 1} for i in range(2)]
@@ -405,6 +402,7 @@ def test_repeat_pois(sample_osm):
 
     test1 = get_nearest_nodes(-122.31, 47.60)
     test2 = get_nearest_nodes(-122.254116, 37.869361)
+    assert not test1.equals(test2)
     # Same coords as the first call, should yield same result
     test3 = get_nearest_nodes(-122.31, 47.60)
     assert test1.equals(test3)
@@ -423,11 +421,11 @@ def test_nodes_in_range(sample_osm):
 
     np.random.seed(0)
     ssize = 10
-    x, y = random_x_y(net, 10)
+    x, y = random_x_y(net, ssize)
     snaps = net.get_node_ids(x, y)
 
     test1 = net.nodes_in_range(snaps, 1)
-    net.precompute(10)
+    net.precompute(ssize)
     test5 = net.nodes_in_range(snaps, 5)
     test11 = net.nodes_in_range(snaps, 11)
     assert test1.weight.max() == 1
