@@ -10,14 +10,14 @@ from pandarm.cyaccess import cyaccess
 
 @pytest.fixture(scope="module")
 def nodes_and_edges(request):
-    store = pd.HDFStore(
-        os.path.join(os.path.dirname(__file__), 'osm_sample.h5'), "r")
+    store = pd.HDFStore(os.path.join(os.path.dirname(__file__), "osm_sample.h5"), "r")
     nodes = store.nodes
     edges = store.edges[["from", "to"]]
     edge_weights = store.edges[["weight"]]
 
     def fin():
         store.close()
+
     request.addfinalizer(fin)
 
     return nodes, edges, edge_weights
@@ -37,7 +37,7 @@ def net(nodes_and_edges):
         nodes.values,
         edges.values.astype(np.int64),
         edge_weights.transpose().values,
-        True
+        True,
     )
 
     net.precompute_range(10)
@@ -52,14 +52,14 @@ def test_agg_analysis(net, nodes_and_edges):
     print(nodes)
     random_node_ids = np.random.choice(np.arange(len(nodes)), NUM_NODES)
     random_vals = np.random.random(NUM_NODES) * 100
-    net.initialize_access_var(b'test', random_node_ids, random_vals)
-    ret = net.get_all_aggregate_accessibility_variables(10, b'test', b'sum', b'flat')
+    net.initialize_access_var(b"test", random_node_ids, random_vals)
+    ret = net.get_all_aggregate_accessibility_variables(10, b"test", b"sum", b"flat")
     ret = pd.Series(ret)
     assert_almost_equal(ret[0], 159.208338, decimal=4)
     assert_almost_equal(ret[50], 94.466888, decimal=4)
 
     # test missing aggregation type
-    ret = net.get_all_aggregate_accessibility_variables(10, b'test', b'this is', b'bogus')
+    ret = net.get_all_aggregate_accessibility_variables(10, b"test", b"this is", b"bogus")
     assert np.all(np.isnan(ret))
 
 
@@ -71,7 +71,7 @@ def test_poi_analysis(net, nodes_and_edges):
     print(random_node_ids)
     # theres a bytestring encoding problem here that crashes macs
     net.initialize_category(10, 3, b"0", random_node_ids)
-    dists, poi_ids = net.find_all_nearest_pois(10, 3, b'0')
+    dists, poi_ids = net.find_all_nearest_pois(10, 3, b"0")
 
     df = pd.DataFrame(poi_ids)
     assert df.loc[0, 0] == 6
@@ -99,7 +99,7 @@ def test_shortest_path(net):
     assert net.shortest_path_distance(996, 71) == 23
 
 
-'''
+"""
 # run this and watch the memory use in activity monitor
 def test_memory_leak(nodes_and_edges):
     nodes, edges, edge_weights = nodes_and_edges
@@ -118,4 +118,4 @@ def test_memory_leak(nodes_and_edges):
             edge_weights.transpose().values,
             True
         )
-'''
+"""
