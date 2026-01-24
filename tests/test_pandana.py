@@ -426,6 +426,7 @@ def test_nodes_in_range(sample_osm):
     x, y = random_x_y(net, 10)
     snaps = net.get_node_ids(x, y)
 
+
     test1 = net.nodes_in_range(snaps, 1)
     net.precompute(10)
     test5 = net.nodes_in_range(snaps, 5)
@@ -435,7 +436,13 @@ def test_nodes_in_range(sample_osm):
     assert test11.weight.max() == 11
 
     focus_id = snaps[0]
-    all_distances = net.shortest_path_lengths([focus_id] * len(net.node_ids), net.node_ids)
+    with pytest.warns(
+        UserWarning,
+        match="Unsigned integer: shortest path distance is trying to be calculated",
+    ):
+        all_distances = net.shortest_path_lengths(
+            [focus_id] * len(net.node_ids), net.node_ids
+        )
     all_distances = np.asarray(all_distances)
     assert (all_distances <= 1).sum() == len(test1.query("source == {}".format(focus_id)))
     assert (all_distances <= 5).sum() == len(test5.query("source == {}".format(focus_id)))
