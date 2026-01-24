@@ -1,5 +1,3 @@
-import pathlib
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -12,7 +10,7 @@ from pandas.testing import assert_index_equal
 
 @pytest.fixture(scope="module")
 def sample_osm(request):
-    store = pd.HDFStore(pathlib.Path(__file__).parent / "osm_sample.h5", "r")
+    store = pd.HDFStore(pytest.h5_osm_sample, "r")
     nodes, edges = store.nodes, store.edges
 
     with pytest.no_crs_warning:
@@ -31,7 +29,7 @@ def sample_osm(request):
 # initialize a second network
 @pytest.fixture(scope="module")
 def second_sample_osm(request):
-    store = pd.HDFStore(pathlib.Path(__file__).parent / "osm_sample.h5", "r")
+    store = pd.HDFStore(pytest.h5_osm_sample, "r")
     nodes, edges = store.nodes, store.edges
 
     with pytest.no_crs_warning:
@@ -131,7 +129,7 @@ def test_agg_variables_accuracy(sample_osm):
 
 
 def test_non_integer_nodeids(request):
-    store = pd.HDFStore(pathlib.Path(__file__).parent / "osm_sample.h5", "r")
+    store = pd.HDFStore(pytest.h5_osm_sample, "r")
     nodes, edges = store.nodes, store.edges
 
     # convert to string!
@@ -429,7 +427,6 @@ def test_nodes_in_range(sample_osm):
     x, y = random_x_y(net, ssize)
     snaps = net.get_node_ids(x, y)
 
-
     test1 = net.nodes_in_range(snaps, 1)
     net.precompute(ssize)
     test5 = net.nodes_in_range(snaps, 5)
@@ -443,9 +440,7 @@ def test_nodes_in_range(sample_osm):
         UserWarning,
         match="Unsigned integer: shortest path distance is trying to be calculated",
     ):
-        all_distances = net.shortest_path_lengths(
-            [focus_id] * len(net.node_ids), net.node_ids
-        )
+        all_distances = net.shortest_path_lengths([focus_id] * len(net.node_ids), net.node_ids)
     all_distances = np.asarray(all_distances)
     assert (all_distances <= 1).sum() == len(test1.query("source == {}".format(focus_id)))
     assert (all_distances <= 5).sum() == len(test5.query("source == {}".format(focus_id)))

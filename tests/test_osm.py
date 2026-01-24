@@ -1,6 +1,3 @@
-import pathlib
-import tempfile
-
 import numpy as np
 import osmnx as ox
 import pandas as pd
@@ -10,19 +7,6 @@ import pandarm as pdna
 
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
-
-
-@pytest.fixture
-def tmpfile(request):
-    fname = pathlib.Path(tempfile.NamedTemporaryFile().name)
-
-    def cleanup():
-        if fname.exists():
-            fname.unlink()
-
-    request.addfinalizer(cleanup)
-
-    return fname
 
 
 @pytest.fixture(scope="module")
