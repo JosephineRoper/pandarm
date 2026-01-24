@@ -17,7 +17,8 @@ def sample_osm(request):
     store = pd.HDFStore(os.path.join(os.path.dirname(__file__), "osm_sample.h5"), "r")
     nodes, edges = store.nodes, store.edges
 
-    net = pdna.Network(nodes.x, nodes.y, edges["from"], edges.to, edges[["weight"]])
+    with pytest.no_crs_warning:
+        net = pdna.Network(nodes.x, nodes.y, edges["from"], edges.to, edges[["weight"]])
 
     net.precompute(2000)
 
@@ -34,7 +35,9 @@ def sample_osm(request):
 def second_sample_osm(request):
     store = pd.HDFStore(os.path.join(os.path.dirname(__file__), "osm_sample.h5"), "r")
     nodes, edges = store.nodes, store.edges
-    net = pdna.Network(nodes.x, nodes.y, edges["from"], edges.to, edges[["weight"]])
+
+    with pytest.no_crs_warning:
+        net = pdna.Network(nodes.x, nodes.y, edges["from"], edges.to, edges[["weight"]])
 
     net.precompute(2000)
 
@@ -138,7 +141,8 @@ def test_non_integer_nodeids(request):
     edges["from"] = edges["from"].astype("str")
     edges["to"] = edges["to"].astype("str")
 
-    net = pdna.Network(nodes.x, nodes.y, edges["from"], edges.to, edges[["weight"]])
+    with pytest.no_crs_warning:
+        net = pdna.Network(nodes.x, nodes.y, edges["from"], edges.to, edges[["weight"]])
 
     def fin():
         store.close()

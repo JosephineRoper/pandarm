@@ -41,7 +41,10 @@ def two_way():
 
 @pytest.fixture(scope="module")
 def network(nodes, edges, edge_weights, two_way):
-    return Network(nodes["x"], nodes["y"], edges["from"], edges["to"], edge_weights, two_way)
+    with pytest.no_crs_warning:
+        return Network(
+            nodes["x"], nodes["y"], edges["from"], edges["to"], edge_weights, two_way
+        )
 
 
 @pytest.fixture(scope="module")
@@ -118,7 +121,8 @@ def test_network_to_pandas_hdf5_removal(tmpfile, network, impedance_names, two_w
 
 def test_network_from_pandas_hdf5(tmpfile, network, nodes, edges_df, impedance_names, two_way):
     ph5.network_to_pandas_hdf5(network, tmpfile)
-    new_net = ph5.network_from_pandas_hdf5(Network, tmpfile)
+    with pytest.no_crs_warning:
+        new_net = ph5.network_from_pandas_hdf5(Network, tmpfile)
     new_net.nodes_df = new_net.nodes_df
 
     assert_frame_equal(new_net.nodes_df.drop(columns="geometry"), nodes)
@@ -129,7 +133,8 @@ def test_network_from_pandas_hdf5(tmpfile, network, nodes, edges_df, impedance_n
 
 def test_network_save_load_hdf5(tmpfile, network, impedance_names, two_way, rm_nodes):
     network.save_hdf5(tmpfile, rm_nodes)
-    new_net = Network.from_hdf5(tmpfile)
+    with pytest.no_crs_warning:
+        new_net = Network.from_hdf5(tmpfile)
 
     nodes, edges = ph5.remove_nodes(network, rm_nodes)
     new_net.nodes_df = new_net.nodes_df
