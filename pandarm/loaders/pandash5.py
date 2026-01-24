@@ -73,7 +73,7 @@ def network_from_pandas_hdf5(cls, filename):
     Parameters
     ----------
     cls : class
-        Class to instantiate, usually pandana.Network.
+        Class to instantiate, usually pandarm.Network.
     filename : str
 
     Returns
