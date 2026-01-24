@@ -342,7 +342,7 @@ def test_pois2(second_sample_osm):
     net2.nearest_pois(2000, "restaurants", num_pois=10)
 
 
-def test_pois_pandana3(second_sample_osm):
+def test_pois_pandarm3(second_sample_osm):
     net2 = second_sample_osm
 
     ssize = 50
@@ -355,7 +355,7 @@ def test_pois_pandana3(second_sample_osm):
     net2.nearest_pois(2000, "restaurants", num_pois=10)
 
 
-def test_pois_pandana3_pos_args(second_sample_osm):
+def test_pois_pandarm3_pos_args(second_sample_osm):
     net2 = second_sample_osm
 
     ssize = 50
