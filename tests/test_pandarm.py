@@ -91,7 +91,7 @@ class TestAggVaraiblesAccuracy:
         self.net.set(nodes, variable=self.r)
 
     ###########################################################################
-    # remove decorator and warning catcher prior to the 'v0.1.0' release
+    # remove decorator and warning catcher when 'type' is removed
     func_or_type = pytest.mark.parametrize("kwarg", ("func", "type"))
 
     def _catch_warning(self, kwarg_name, kwarg_value):
