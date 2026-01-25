@@ -611,7 +611,7 @@ class Network:
             node in the network.
         """
 
-        # 'type' marker for removal -- remove prior to the 'v0.1.0' release
+        # 'type' marker for removal -- remove after extended deprecation [2026-01]
         if type and isinstance(type, str):
             warnings.warn(
                 "The 'type' keyword is deprecated in favor of 'func' "
