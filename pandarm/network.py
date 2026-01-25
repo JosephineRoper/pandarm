@@ -615,7 +615,7 @@ class Network:
         if type and isinstance(type, str):
             warnings.warn(
                 "The 'type' keyword is deprecated in favor of 'func' "
-                "and it will be removed in future.",
+                "and it will be removed in the future.",
                 FutureWarning,
                 stacklevel=2,
             )
