@@ -49,7 +49,7 @@ print()
 # per the unit tests
 
 net.set(pd.Series(net.node_ids))
-s = net.aggregate(10000, type='count')
+s = net.aggregate(10000, func='count')
 connected_nodes = s[s == 477]
 
 n = 10000

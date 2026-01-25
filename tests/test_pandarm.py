@@ -54,7 +54,7 @@ def random_data(ssize):
 
 def get_connected_nodes(net):
     net.set(pd.Series(net.node_ids))
-    s = net.aggregate(10000, type="COUNT")
+    s = net.aggregate(10000, func="COUNT")
     # not all the nodes in the sample network are connected
     # get the nodes in the largest connected subgraph
     # from printing the result out I know the largest subgraph has
@@ -74,57 +74,98 @@ def random_x_y(sample_osm, ssize):
     return x, y
 
 
-def test_agg_variables_accuracy(sample_osm):
-    net = sample_osm
+class TestAggVaraiblesAccuracy:
+    @pytest.fixture(autouse=True)
+    def setup_method(self, sample_osm):
+        self.net = sample_osm
 
-    # test accuracy compared to Pandas functions
-    ssize = 50
-    r = random_data(ssize)
-    connected_nodes = get_connected_nodes(net)
-    nodes = random_connected_nodes(net, ssize)
-    net.set(nodes, variable=r)
+        # test accuracy compared to Pandas functions
+        self.distance = 100000
+        ssize = 50
 
-    s = net.aggregate(100000, type="count").loc[connected_nodes]
-    assert s.unique().size == 1
-    assert s.iloc[0] == 50
+        self.r = random_data(ssize)
+        self.r_sorted = self.r.sort_values()
 
-    s = net.aggregate(100000, type="AVE").loc[connected_nodes]
-    assert s.describe()["std"] < 0.01  # assert almost equal
-    assert_allclose(s.mean(), r.mean(), atol=1e-3)
+        self.connected_nodes = get_connected_nodes(self.net)
+        nodes = random_connected_nodes(self.net, ssize)
+        self.net.set(nodes, variable=self.r)
 
-    s = net.aggregate(100000, type="mean").loc[connected_nodes]
-    assert s.describe()["std"] < 0.01  # assert almost equal
-    assert_allclose(s.mean(), r.mean(), atol=1e-3)
+    ###########################################################################
+    # remove decorator and warning catcher when 'type' is removed
+    func_or_type = pytest.mark.parametrize("kwarg", ("func", "type"))
 
-    s = net.aggregate(100000, type="min").loc[connected_nodes]
-    assert s.describe()["std"] < 0.01  # assert almost equal
-    assert_allclose(s.mean(), r.min(), atol=1e-3)
+    def _catch_warning(self, kwarg_name, kwarg_value):
+        """Helper for catch FutureWarning for 'type' deprecation."""
 
-    s = net.aggregate(100000, type="max").loc[connected_nodes]
-    assert s.describe()["std"] < 0.01  # assert almost equal
-    assert_allclose(s.mean(), r.max(), atol=1e-3)
+        if kwarg_name == "type":
+            with pytest.warns(FutureWarning, match="The 'type' keyword is deprecated "):
+                s = self.net.aggregate(self.distance, **{kwarg_name: kwarg_value})
+        else:
+            s = self.net.aggregate(self.distance, **{kwarg_name: kwarg_value})
 
-    r.sort_values(inplace=True)
+        return s.loc[self.connected_nodes]
 
-    s = net.aggregate(100000, type="median").loc[connected_nodes]
-    assert s.describe()["std"] < 0.01  # assert almost equal
-    assert_allclose(s.mean(), r.iloc[25], atol=1e-2)
+    ###########################################################################
 
-    s = net.aggregate(100000, type="25pct").loc[connected_nodes]
-    assert s.describe()["std"] < 0.01  # assert almost equal
-    assert_allclose(s.mean(), r.iloc[12], atol=1e-2)
+    @func_or_type
+    def test_count(self, kwarg):
+        s = self._catch_warning(kwarg, "count")
+        assert s.unique().size == 1
+        assert s.iloc[0] == 50
 
-    s = net.aggregate(100000, type="75pct").loc[connected_nodes]
-    assert s.describe()["std"] < 0.01  # assert almost equal
-    assert_allclose(s.mean(), r.iloc[37], atol=1e-2)
+    @func_or_type
+    def test_ave(self, kwarg):
+        s = self._catch_warning(kwarg, "AVE")
+        assert s.describe()["std"] < 0.01
+        assert_allclose(s.mean(), self.r.mean(), atol=1e-3)
 
-    s = net.aggregate(100000, type="SUM").loc[connected_nodes]
-    assert s.describe()["std"] < 0.05  # assert almost equal
-    assert_allclose(s.mean(), r.sum(), atol=1e-2)
+    @func_or_type
+    def test_mean(self, kwarg):
+        s = self._catch_warning(kwarg, "mean")
+        assert s.describe()["std"] < 0.01
+        assert_allclose(s.mean(), self.r.mean(), atol=1e-3)
 
-    s = net.aggregate(100000, type="std").loc[connected_nodes]
-    assert s.describe()["std"] < 0.01  # assert almost equal
-    assert_allclose(s.mean(), r.std(), atol=1e-2)
+    @func_or_type
+    def test_min(self, kwarg):
+        s = self._catch_warning(kwarg, "min")
+        assert s.describe()["std"] < 0.01
+        assert_allclose(s.mean(), self.r.min(), atol=1e-3)
+
+    @func_or_type
+    def test_max(self, kwarg):
+        s = self._catch_warning(kwarg, "max")
+        assert s.describe()["std"] < 0.01
+        assert_allclose(s.mean(), self.r.max(), atol=1e-3)
+
+    @func_or_type
+    def test_median(self, kwarg):
+        s = self._catch_warning(kwarg, "median")
+        assert s.describe()["std"] < 0.01
+        assert_allclose(s.mean(), self.r_sorted.iloc[25], atol=1e-2)
+
+    @func_or_type
+    def test_25pct(self, kwarg):
+        s = self._catch_warning(kwarg, "25pct")
+        assert s.describe()["std"] < 0.01
+        assert_allclose(s.mean(), self.r_sorted.iloc[12], atol=1e-2)
+
+    @func_or_type
+    def test_75pct(self, kwarg):
+        s = self._catch_warning(kwarg, "75pct")
+        assert s.describe()["std"] < 0.01
+        assert_allclose(s.mean(), self.r_sorted.iloc[37], atol=1e-2)
+
+    @func_or_type
+    def test_sum(self, kwarg):
+        s = self._catch_warning(kwarg, "SUM")
+        assert s.describe()["std"] < 0.05
+        assert_allclose(s.mean(), self.r_sorted.sum(), atol=1e-2)
+
+    @func_or_type
+    def test_std(self, kwarg):
+        s = self._catch_warning(kwarg, "std")
+        assert s.describe()["std"] < 0.01
+        assert_allclose(s.mean(), self.r_sorted.std(), atol=1e-2)
 
 
 def test_non_integer_nodeids(request):
@@ -151,7 +192,7 @@ def test_non_integer_nodeids(request):
     random_nodes = random_connected_nodes(net, ssize)
     net.set(random_nodes, variable=r)
 
-    s = net.aggregate(100000, type="count").loc[connected_nodes]
+    s = net.aggregate(100000, func="count").loc[connected_nodes]
     assert list(nodes.index), list(s.index)
 
 
@@ -166,7 +207,7 @@ def test_agg_variables(sample_osm):
             for distance in [5, 10, 20]:
                 t = _type
                 d = decay
-                s = net.aggregate(distance, type=t, decay=d)
+                s = net.aggregate(distance, func=t, decay=d)
                 assert s.describe()["std"] > 0
 
     # testing w/o setting variable
@@ -178,7 +219,7 @@ def test_agg_variables(sample_osm):
             for distance in [5, 10, 20]:
                 t = _type
                 d = decay
-                s = net.aggregate(distance, type=t, decay=d)
+                s = net.aggregate(distance, func=t, decay=d)
                 if t != "std":
                     assert s.describe()["std"] > 0
                 else:
@@ -200,7 +241,7 @@ def test_non_float_node_values(sample_osm):
             for distance in [5, 10, 20]:
                 t = _type
                 d = decay
-                s = net.aggregate(distance, type=t, decay=d)
+                s = net.aggregate(distance, func=t, decay=d)
                 assert s.describe()["std"] > 0
 
 
@@ -238,7 +279,7 @@ def test_named_variable(sample_osm):
     ssize = 50
     net.set(random_node_ids(sample_osm, ssize), variable=random_data(ssize), name="foo")
 
-    net.aggregate(500, type="sum", decay="linear", name="foo")
+    net.aggregate(500, func="sum", decay="linear", name="foo")
 
 
 """

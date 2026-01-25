@@ -548,7 +548,15 @@ class Network:
 
         return self.impedance_names.index(imp_name)
 
-    def aggregate(self, distance, type="sum", decay="linear", imp_name=None, name="tmp"):  # noqa: A002 - `type` builtin
+    def aggregate(
+        self,
+        distance,
+        func="sum",
+        decay="linear",
+        imp_name=None,
+        name="tmp",
+        type=None,  # noqa: A002 - `type` builtin -- marker for removal
+    ):
         """
         Aggregate information for every source node in the network - this is
         really the main purpose of this library.  This allows you to touch
@@ -564,7 +572,7 @@ class Network:
             weight. This will usually be a distance unit in meters however
             if you have customized the impedance this could be in other
             units such as utility or time etc.
-        type : string, optional (default 'sum')
+        func : string, optional (default 'sum')
             The type of aggregation: 'mean' (with 'ave', 'avg', 'average'
             as aliases), 'std' (or 'stddev'), 'sum', 'count', 'min', 'max',
             'med' (or 'median'), '25pct', or '75pct'. (Quantiles are
@@ -603,25 +611,35 @@ class Network:
             node in the network.
         """
 
+        # 'type' marker for removal -- remove after extended deprecation [2026-01]
+        if type and isinstance(type, str):
+            warnings.warn(
+                "The 'type' keyword is deprecated in favor of 'func' "
+                "and it will be removed in the future.",
+                FutureWarning,
+                stacklevel=2,
+            )
+            func = type
+
         imp_num = self._imp_name_to_num(imp_name)
-        _type = type.lower()
+        func = func.lower()
 
         # Resolve aliases
-        if _type in ["ave", "avg", "average"]:
-            _type = "mean"
+        if func in ["ave", "avg", "average"]:
+            func = "mean"
 
-        if _type in ["stddev"]:
-            _type = "std"
+        if func in ["stddev"]:
+            func = "std"
 
-        if _type in ["med"]:
-            _type = "median"
+        if func in ["med"]:
+            func = "median"
 
         assert name in self.variable_names, "A variable with that name has not yet been initialized"
 
         res = self.net.get_all_aggregate_accessibility_variables(
             distance,
             name,
-            _type,
+            func,
             decay,
             imp_num,
         )
@@ -926,6 +944,6 @@ class Network:
         self.set(self.node_ids.to_series(), name="counter")
 
         # count nodes within impedance range
-        agg = self.aggregate(impedance, type="count", imp_name=imp_name, name="counter")
+        agg = self.aggregate(impedance, func="count", imp_name=imp_name, name="counter")
 
         return np.array(agg[agg < count].index)
