@@ -29,7 +29,7 @@ def reindex(series1, series2):
     return df.right
 
 
-def adjacency_matrix(edges_df, plot_matrix=False):
+def adjacency_matrix(edges_df, plot_matrix=False):  # noqa: ARG001 - Unused function argument: `plot_matrix`
     df = pd.crosstab(edges_df["from"], edges_df["to"])
     idx = df.columns.union(df.index)
     df = df.reindex(index=idx, columns=idx, fill_value=0)

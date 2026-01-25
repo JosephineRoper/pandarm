@@ -58,8 +58,11 @@ all = [
 
 
 [tool.ruff]
-lint.ignore = ["E226","E402"]
 line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "N", "B", "A", "C4", "SIM", "ARG"]
+
 
 [tool.coverage.run]
 source = ["./pandarm"]
