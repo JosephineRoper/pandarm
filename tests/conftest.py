@@ -12,12 +12,13 @@ def pytest_configure(config):  # noqa: ARG001
 
 @pytest.fixture
 def tmpfile(request):
-    fname = pathlib.Path(tempfile.NamedTemporaryFile().name)
+    with tempfile.NamedTemporaryFile() as f:
+        fname = pathlib.Path(f.name)
 
-    def cleanup():
-        if fname.exists():
-            fname.unlink()
+        def cleanup():
+            if fname.exists():
+                fname.unlink()
 
-    request.addfinalizer(cleanup)
+        request.addfinalizer(cleanup)
 
-    return fname
+        return fname

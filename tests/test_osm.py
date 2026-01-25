@@ -2,11 +2,10 @@ import numpy as np
 import osmnx as ox
 import pandas as pd
 import pytest
-
-import pandarm as pdna
-
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
+
+import pandarm as pdna
 
 
 @pytest.fixture(scope="module")

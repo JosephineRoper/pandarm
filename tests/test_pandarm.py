@@ -1,11 +1,10 @@
 import numpy as np
 import pandas as pd
 import pytest
-
-import pandarm.network as pdna
-
 from numpy.testing import assert_allclose
 from pandas.testing import assert_index_equal
+
+import pandarm.network as pdna
 
 
 @pytest.fixture(scope="module")
@@ -162,10 +161,10 @@ def test_agg_variables(sample_osm):
     ssize = 50
     net.set(random_node_ids(sample_osm, ssize), variable=random_data(ssize))
 
-    for type in net.aggregations:
+    for _type in net.aggregations:
         for decay in net.decays:
             for distance in [5, 10, 20]:
-                t = type
+                t = _type
                 d = decay
                 s = net.aggregate(distance, type=t, decay=d)
                 assert s.describe()["std"] > 0
@@ -174,10 +173,10 @@ def test_agg_variables(sample_osm):
     ssize = 50
     net.set(random_node_ids(sample_osm, ssize))
 
-    for type in net.aggregations:
+    for _type in net.aggregations:
         for decay in net.decays:
             for distance in [5, 10, 20]:
-                t = type
+                t = _type
                 d = decay
                 s = net.aggregate(distance, type=t, decay=d)
                 if t != "std":
@@ -196,10 +195,10 @@ def test_non_float_node_values(sample_osm):
         variable=(random_data(ssize) * 100).astype(np.int64),
     )
 
-    for type in net.aggregations:
+    for _type in net.aggregations:
         for decay in net.decays:
             for distance in [5, 10, 20]:
-                t = type
+                t = _type
                 d = decay
                 s = net.aggregate(distance, type=t, decay=d)
                 assert s.describe()["std"] > 0
@@ -257,7 +256,7 @@ def test_plot(sample_osm):
 
 
 def test_shortest_path(sample_osm):
-    for i in range(10):
+    for _ in range(10):
         ids = random_connected_nodes(sample_osm, 2)
         path = sample_osm.shortest_path(ids[0], ids[1])
         assert path.size >= 2
@@ -282,17 +281,17 @@ def test_shortest_paths(sample_osm):
 
 
 def test_shortest_path_length(sample_osm):
-    for i in range(10):
+    for _ in range(10):
         ids = random_connected_nodes(sample_osm, 2)
-        len = sample_osm.shortest_path_length(ids[0], ids[1])
-        assert len >= 0
+        _len = sample_osm.shortest_path_length(ids[0], ids[1])
+        assert _len >= 0
 
 
 def test_shortest_path_lengths(sample_osm):
     nodes = random_connected_nodes(sample_osm, 100)
     lens = sample_osm.shortest_path_lengths(nodes[0:50], nodes[50:100])
-    for len in lens:
-        assert len >= 0
+    for _len in lens:
+        assert _len >= 0
 
     # check mismatched OD lists
     try:
@@ -305,7 +304,7 @@ def test_shortest_path_lengths(sample_osm):
 def test_pois_a(sample_osm):
     net = sample_osm
     x, y = random_x_y(sample_osm, 100)
-    x.index = ["lab%d" % i for i in range(len(x))]
+    x.index = ["lab{i}" for i in range(len(x))]
     y.index = x.index
     net.set_pois("restaurants", 2000, 10, x, y)
     net.nearest_pois(2000, "restaurants", num_pois=10, include_poi_ids=True)
@@ -384,13 +383,13 @@ def test_sorted_pois(sample_osm):
 
     test = net.nearest_pois(2000, "restaurants", num_pois=10)
 
-    for ind, row in test.iterrows():
+    for _, row in test.iterrows():
         # make sure it's sorted
         assert_allclose(row, row.sort_values())
 
 
 def test_repeat_pois(sample_osm):
-    def get_nearest_nodes(x, y, x2=None, y2=None, n=2):
+    def get_nearest_nodes(x, y, x2=None, y2=None):
         coords_dict = [{"x": x, "y": y, "var": 1} for i in range(2)]
         if x2 and y2:
             coords_dict.append({"x": x2, "y": y2, "var": 1})
@@ -410,7 +409,7 @@ def test_repeat_pois(sample_osm):
     test3 = get_nearest_nodes(-122.31, 47.60)
     assert test1.equals(test3)
 
-    test4 = get_nearest_nodes(-122.31, 47.60, -122.32, 47.61, n=3)
+    test4 = get_nearest_nodes(-122.31, 47.60, -122.32, 47.61)
     assert_allclose(test4.loc[53114882], [7, 13, 13, 2000, 2000, 2, 0, 1, np.nan, np.nan])
     assert_allclose(test4.loc[53114880], [6, 14, 14, 2000, 2000, 2, 0, 1, np.nan, np.nan])
     assert_allclose(
@@ -442,6 +441,6 @@ def test_nodes_in_range(sample_osm):
     ):
         all_distances = net.shortest_path_lengths([focus_id] * len(net.node_ids), net.node_ids)
     all_distances = np.asarray(all_distances)
-    assert (all_distances <= 1).sum() == len(test1.query("source == {}".format(focus_id)))
-    assert (all_distances <= 5).sum() == len(test5.query("source == {}".format(focus_id)))
-    assert (all_distances <= 11).sum() == len(test11.query("source == {}".format(focus_id)))
+    assert (all_distances <= 1).sum() == len(test1.query(f"source == {focus_id}"))
+    assert (all_distances <= 5).sum() == len(test5.query(f"source == {focus_id}"))
+    assert (all_distances <= 11).sum() == len(test11.query(f"source == {focus_id}"))
