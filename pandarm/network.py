@@ -67,7 +67,11 @@ class Network:
         crs=None,
     ):
         if crs is None:
-            warnings.warn("No CRS was passed to geometry input; assuming geographic coordinates")
+            warnings.warn(
+                "No CRS was passed to geometry input; assuming geographic coordinates",
+                UserWarning,
+                stacklevel=2,
+            )
             crs = 4326
         nodes_df = gpd.GeoDataFrame(
             {"x": node_x, "y": node_y},
@@ -313,9 +317,7 @@ class Network:
         """
         if len(nodes_a) != len(nodes_b):
             raise ValueError(
-                "Origin and destination counts don't match: {}, {}".format(
-                    len(nodes_a), len(nodes_b)
-                )
+                f"Origin and destination counts don't match: {len(nodes_a)}, {len(nodes_b)}"
             )
 
         # map to internal node indexes
@@ -359,16 +361,17 @@ class Network:
 
         imp_num = self._imp_name_to_num(imp_name)
 
-        len = self.net.shortest_path_distance(node_a, node_b, imp_num)
+        _len = self.net.shortest_path_distance(node_a, node_b, imp_num)
 
-        if len == 4294967.295:
+        if _len == 4294967.295:
             warnings.warn(
-                "Unsigned integer: shortest path distance is trying to be calculated between\
-                external %s and %s unconntected nodes"
-                % (node_a, node_b)
+                "Unsigned integer: shortest path distance is trying to be calculated "
+                f"between external {node_a} and {node_b} unconntected nodes",
+                UserWarning,
+                stacklevel=2,
             )
 
-        return len
+        return _len
 
     def shortest_path_lengths(self, nodes_a, nodes_b, imp_name=None):
         """
@@ -393,9 +396,7 @@ class Network:
         """
         if len(nodes_a) != len(nodes_b):
             raise ValueError(
-                "Origin and destination counts don't match: {}, {}".format(
-                    len(nodes_a), len(nodes_b)
-                )
+                f"Origin and destination counts don't match: {len(nodes_a)}, {len(nodes_b)}"
             )
 
         # map to internal node indexes
@@ -410,9 +411,10 @@ class Network:
             unconnected_idx = [i for i, v in enumerate(lens) if v == 4294967.295]
             unconnected_nodes = [(nodes_a[i], nodes_b[i]) for i in unconnected_idx]
             warnings.warn(
-                "Unsigned integer: shortest path distance is trying to be calculated \
-                between the following external unconnected nodes: %s"
-                % (unconnected_nodes)
+                "Unsigned integer: shortest path distance is trying to be calculated "
+                f"between the following external unconnected nodes: {unconnected_nodes}",
+                UserWarning,
+                stacklevel=2,
             )
 
         return lens
@@ -461,7 +463,7 @@ class Network:
         df = df.dropna(how="any")
         newl = len(df)
         if length - newl > 0:
-            print("Removed %d rows because they contain missing values" % (length - newl))
+            print(f"Removed {length - newl} rows because they contain missing values")
 
         self.variable_names.add(name)
 
@@ -526,13 +528,13 @@ class Network:
         clean_result = pd.concat(
             [
                 pd.DataFrame(r, columns=["destination", imp_name]).assign(source=ix)
-                for r, ix in zip(raw_result, nodes)
+                for r, ix in zip(raw_result, nodes, strict=True)
             ]
         )[["source", "destination", imp_name]]
         return (
             clean_result.drop_duplicates(subset=["source", "destination"])
             .reset_index(drop=True)
-            .query("{} <= {}".format(imp_name, radius))
+            .query(f"{imp_name} <= {radius}")
         )
 
     def _imp_name_to_num(self, imp_name):
@@ -546,7 +548,7 @@ class Network:
 
         return self.impedance_names.index(imp_name)
 
-    def aggregate(self, distance, type="sum", decay="linear", imp_name=None, name="tmp"):
+    def aggregate(self, distance, type="sum", decay="linear", imp_name=None, name="tmp"):  # noqa: A002 - `type` builtin
         """
         Aggregate information for every source node in the network - this is
         really the main purpose of this library.  This allows you to touch
@@ -602,24 +604,24 @@ class Network:
         """
 
         imp_num = self._imp_name_to_num(imp_name)
-        type = type.lower()
+        _type = type.lower()
 
         # Resolve aliases
-        if type in ["ave", "avg", "average"]:
-            type = "mean"
+        if _type in ["ave", "avg", "average"]:
+            _type = "mean"
 
-        if type in ["stddev"]:
-            type = "std"
+        if _type in ["stddev"]:
+            _type = "std"
 
-        if type in ["med"]:
-            type = "median"
+        if _type in ["med"]:
+            _type = "median"
 
         assert name in self.variable_names, "A variable with that name has not yet been initialized"
 
         res = self.net.get_all_aggregate_accessibility_variables(
             distance,
             name,
-            type,
+            _type,
             decay,
             imp_num,
         )
@@ -875,7 +877,7 @@ class Network:
 
         if include_poi_ids:
             df2 = pd.DataFrame(poi_ids, index=self.node_ids)
-            df2.columns = ["poi%d" % i for i in range(1, num_pois + 1)]
+            df2.columns = [f"poi{i}" for i in range(1, num_pois + 1)]
             for col in df2.columns:
                 # if this is still all working according to plan at this point
                 # the great magic trick is now to turn the integer position of

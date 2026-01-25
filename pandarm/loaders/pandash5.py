@@ -84,7 +84,7 @@ def network_from_pandas_hdf5(cls, filename):
     with pd.HDFStore(filename) as store:
         nodes = store["nodes"]
         edges = store["edges"]
-        crs = store["crs"].values[0] if "crs" in store.keys() else None
+        crs = store["crs"].values[0] if "crs" in store.keys() else None  # noqa: SIM118 (this is not a dict)
         if "edges_geom_type" in store:
             geometry = shapely.from_ragged_array(
                 shapely.GeometryType(int(store["edges_geom_type"].item())),
