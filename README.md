@@ -66,7 +66,7 @@ The original pandana package from which this fork was derived was created by [Fl
 
 A [paper on Pandana](http://onlinepubs.trb.org/onlinepubs/conferences/2012/4thITM/Papers-A/0117-000062.pdf) was presented at the Transportation Research Board Annual Conference in 2012. Please cite this paper when referring to the methods implemented by this library:
 
-* **Foti, F., Waddell, P., & Luxen, D.** (2012). *A Generalized Computational Framework for Accessibility: From the Pedestrian to the Metropolitan Scale**. Transportation Research Board Annual Conference, 1–14. https://onlinepubs.trb.org/onlinepubs/conferences/2012/4thITM/Papers-A/0117-000062.pdf
+* **Foti, F., Waddell, P., & Luxen, D.** (2012). *A Generalized Computational Framework for Accessibility: From the Pedestrian to the Metropolitan Scale*. Transportation Research Board Annual Conference, 1–14. https://onlinepubs.trb.org/onlinepubs/conferences/2012/4thITM/Papers-A/0117-000062.pdf
 
 ## Related packages
 
