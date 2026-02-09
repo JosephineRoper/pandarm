@@ -1,6 +1,6 @@
 import geopandas as gpd
 import pandas as pd
-from shapely.io import from_wkb, to_wkb
+import shapely
 
 
 def remove_nodes(network, rm_nodes):
@@ -29,7 +29,7 @@ def remove_nodes(network, rm_nodes):
     return ndf.loc[nodes_to_keep], edf.loc[edges_to_keep]
 
 
-def network_to_pandas_hdf5(network, filename, rm_nodes=None):
+def network_to_pandas_hdf5(network, filename, rm_nodes=None, complevel=None, complib=None):
     """
     Save a Network's data to a Pandas HDFStore.
 
@@ -47,11 +47,20 @@ def network_to_pandas_hdf5(network, filename, rm_nodes=None):
     else:
         nodes, edges = network.nodes_df, network.edges_df
 
-    with pd.HDFStore(filename, mode="w") as store:
+    with pd.HDFStore(filename, mode="w", complevel=complevel, complib=complib) as store:
         store["nodes"] = nodes.drop(columns="geometry")
+
         if isinstance(edges, gpd.GeoDataFrame):
-            edges["geometry"] = edges[edges.geometry.name].apply(to_wkb)
-        store["edges"] = edges
+            store["edges"] = edges.drop(columns="geometry")
+
+            # use native encoding for better compression
+            ragged = shapely.to_ragged_array(network.edges_df.geometry)
+            store["edges_geom_type"] = pd.Series([str(ragged[0])])
+            store["edges_coords"] = pd.DataFrame(ragged[1])
+            store["edges_offsets"] = pd.Series(ragged[2][0])
+        else:
+            store["edges"] = edges
+
         store["two_way"] = pd.Series([network._twoway])
         store["impedance_names"] = pd.Series(network.impedance_names)
         store["crs"] = pd.Series([network.crs])
@@ -64,7 +73,7 @@ def network_from_pandas_hdf5(cls, filename):
     Parameters
     ----------
     cls : class
-        Class to instantiate, usually pandana.Network.
+        Class to instantiate, usually pandarm.Network.
     filename : str
 
     Returns
@@ -75,14 +84,18 @@ def network_from_pandas_hdf5(cls, filename):
     with pd.HDFStore(filename) as store:
         nodes = store["nodes"]
         edges = store["edges"]
-        crs = store['crs'].values[0] if 'crs' in store.keys() else None
-        if "geometry" in edges.columns:
-            edges["geometry"] = gpd.GeoSeries(edges["geometry"].apply(from_wkb), crs=crs)
+        crs = store["crs"].values[0] if "crs" in store.keys() else None  # noqa: SIM118 (this is not a dict)
+        if "edges_geom_type" in store:
+            geometry = shapely.from_ragged_array(
+                shapely.GeometryType(int(store["edges_geom_type"].item())),
+                store["edges_coords"].values,
+                (store["edges_offsets"].values,),
+            )
+            edges = gpd.GeoDataFrame(edges, geometry=geometry, crs=crs)
             edge_geom = "geometry"
         two_way = store["two_way"][0]
         imp_names = store["impedance_names"].tolist()
-        edge_geom = edges.geometry if 'geometry' in edges.columns.values else None
-        
+        edge_geom = edges.geometry if "geometry" in edges.columns.values else None
 
     return cls(
         nodes["x"],

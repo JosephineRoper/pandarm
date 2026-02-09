@@ -1,24 +1,22 @@
 # test direct use of cyccess (c++/cython extension)
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
-import os
-import sys
 from numpy.testing import assert_almost_equal
 from pandarm.cyaccess import cyaccess
 
 
 @pytest.fixture(scope="module")
 def nodes_and_edges(request):
-    store = pd.HDFStore(
-        os.path.join(os.path.dirname(__file__), 'osm_sample.h5'), "r")
+    store = pd.HDFStore(pytest.h5_osm_sample, "r")
     nodes = store.nodes
     edges = store.edges[["from", "to"]]
     edge_weights = store.edges[["weight"]]
 
     def fin():
         store.close()
+
     request.addfinalizer(fin)
 
     return nodes, edges, edge_weights
@@ -38,7 +36,7 @@ def net(nodes_and_edges):
         nodes.values,
         edges.values.astype(np.int64),
         edge_weights.transpose().values,
-        True
+        True,
     )
 
     net.precompute_range(10)
@@ -48,31 +46,32 @@ def net(nodes_and_edges):
 
 def test_agg_analysis(net, nodes_and_edges):
     nodes = nodes_and_edges[0]
-    NUM_NODES = 30
+    num_nodes = 30
     np.random.seed(0)
     print(nodes)
-    random_node_ids = np.random.choice(np.arange(len(nodes)), NUM_NODES)
-    random_vals = np.random.random(NUM_NODES) * 100
-    net.initialize_access_var(b'test', random_node_ids, random_vals)
-    ret = net.get_all_aggregate_accessibility_variables(10, b'test', b'sum', b'flat')
+    random_node_ids = np.random.choice(np.arange(len(nodes)), num_nodes)
+    random_vals = np.random.random(num_nodes) * 100
+    net.initialize_access_var(b"test", random_node_ids, random_vals)
+    ret = net.get_all_aggregate_accessibility_variables(10, b"test", b"sum", b"flat")
     ret = pd.Series(ret)
     assert_almost_equal(ret[0], 159.208338, decimal=4)
     assert_almost_equal(ret[50], 94.466888, decimal=4)
 
     # test missing aggregation type
-    ret = net.get_all_aggregate_accessibility_variables(10, b'test', b'this is', b'bogus')
+    ret = net.get_all_aggregate_accessibility_variables(10, b"test", b"this is", b"bogus")
     assert np.all(np.isnan(ret))
 
-#@pytest.mark.skipif(sys.platform == "darwin", reason="This test does not run on macOS.")
+
 def test_poi_analysis(net, nodes_and_edges):
     nodes = nodes_and_edges[0]
-    NUM_NODES = 30
+    num_nodes = 30
     np.random.seed(0)
-    random_node_ids = np.random.choice(np.arange(len(nodes)), NUM_NODES)
+    random_node_ids = np.random.choice(np.arange(len(nodes)), num_nodes)
     print(random_node_ids)
     # theres a bytestring encoding problem here that crashes macs
     net.initialize_category(10, 3, b"0", random_node_ids)
-    dists, poi_ids = net.find_all_nearest_pois(10, 3, b'0')
+    dists, poi_ids = net.find_all_nearest_pois(10, 3, b"0")
+
     df = pd.DataFrame(poi_ids)
     assert df.loc[0, 0] == 6
     assert df.loc[0, 1] == 25
@@ -80,7 +79,7 @@ def test_poi_analysis(net, nodes_and_edges):
     s = df[0].value_counts()
     assert s[-1] == 1081
     assert s[5] == 1
-    ret = net.find_all_nearest_pois(10, 3, b'0')
+
     df = pd.DataFrame(dists)
     assert df.loc[0, 0] == 4
     assert df.loc[0, 1] == 6
@@ -99,7 +98,7 @@ def test_shortest_path(net):
     assert net.shortest_path_distance(996, 71) == 23
 
 
-'''
+"""
 # run this and watch the memory use in activity monitor
 def test_memory_leak(nodes_and_edges):
     nodes, edges, edge_weights = nodes_and_edges
@@ -118,4 +117,4 @@ def test_memory_leak(nodes_and_edges):
             edge_weights.transpose().values,
             True
         )
-'''
+"""

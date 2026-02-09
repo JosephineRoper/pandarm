@@ -286,11 +286,6 @@ intersphinx_mapping = {
     "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
     "geopandas": ("https://geopandas.readthedocs.io/en/latest/", None),
     "sklearn": ("https://scikit-learn.org/stable/", None),
-    "giddy": ("https://giddy.readthedocs.io/en/latest/", None),
-    "libpysal": ("https://pysal.org/libpysal/", None),
-    "esda": ("https://esda.readthedocs.io/en/latest/", None),
-    "region": ("https://region.readthedocs.io/en/latest/", None),
-    "hdbscan": ("https://hdbscan.readthedocs.io/en/latest/", None),
 }
 
 numpydoc_xref_ignore = {

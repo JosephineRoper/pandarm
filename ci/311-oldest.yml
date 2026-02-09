@@ -1,17 +1,17 @@
-name: pandarm
+name: test
 channels:
   - conda-forge
 dependencies:
-  - python
+  - python=3.11
   - cxx-compiler  # platform-appropriate compiler w/ OpenMP
-  - geopandas >=1.1
-  - numpy >=2
-  - pandas >=2
-  - pytables >=3.1
-  - scikit-learn >=0.18
+  - geopandas =1.1
+  - numpy =1.26
+  - pandas =2.2
+  - pytables =3.10
+  - scikit-learn =1.4
 
   # plus
-  - osmnx
+  - osmnx =2.0
 
   # dev
   - codecov

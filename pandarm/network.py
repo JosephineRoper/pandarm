@@ -1,3 +1,4 @@
+import importlib
 import warnings
 
 import geopandas as gpd
@@ -67,7 +68,9 @@ class Network:
     ):
         if crs is None:
             warnings.warn(
-                "No CRS was passed to geometry input; assuming geographic coordinates"
+                "No CRS was passed to geometry input; assuming geographic coordinates",
+                UserWarning,
+                stacklevel=2,
             )
             crs = 4326
         nodes_df = gpd.GeoDataFrame(
@@ -123,7 +126,7 @@ class Network:
         add_travel_times=False,
         default_speeds=None,
     ):
-        """Create a pandana.Network object from a geodataframe (via OSMnx graph).
+        """Create a pandarm.Network object from a geodataframe (via OSMnx graph).
 
         Parameters
         ----------
@@ -135,7 +138,7 @@ class Network:
             the type of network to collect from OSM (passed to `osmnx.graph_from_polygon`)
             by default "walk"
         twoway : bool, optional
-            Whether to treat the pandana.Network as directed or undirected. For a directed network,
+            Whether to treat the pandarm.Network as directed or undirected. For a directed network,
             use `twoway=False` (which is the default). For an undirected network (e.g. a
             walk network) where travel can flow in both directions, the network is more
             efficient when twoway=True but forces the impedance to be equal in both
@@ -153,8 +156,8 @@ class Network:
 
         Returns
         -------
-        pandana.Network
-            a pandana.Network object with node coordinates stored in the same system as the
+        pandarm.Network
+            a pandarm.Network object with node coordinates stored in the same system as the
             input geodataframe. If add_travel_times is True, the network impedance
             is travel time measured in seconds (assuming automobile travel speeds); else
             the impedance is travel distance measured in meters
@@ -169,7 +172,7 @@ class Network:
         )
 
     def to_crs(self, output_crs, input_crs=None):
-        """Reproject a pandana.Network object into another coordinate system.
+        """Reproject a pandarm.Network object into another coordinate system.
 
         Note this function does affect the weight/impedance of any network edges, but
         reprojects the x and y coordinates of the nodes (e.g. for precise snapping)
@@ -177,8 +180,8 @@ class Network:
 
         Parameters
         ----------
-        network : pandana.Network
-            an instantiated pandana Network object
+        network : pandarm.Network
+            an instantiated pandarm Network object
         input_crs : int, optional
             the coordinate system used in the Network.node_df dataframe. Typically
             these data are collected in Lon/Lat, so the default 4326. If None, but
@@ -188,8 +191,8 @@ class Network:
 
         Returns
         -------
-        pandana.Network
-            an initialized pandana.Network with 'x' and y' values represented
+        pandarm.Network
+            an initialized pandarm.Network with 'x' and y' values represented
             by coordinates in the specified CRS
         """
         if input_crs is None and isinstance(self.nodes_df, gpd.GeoDataFrame):
@@ -212,7 +215,7 @@ class Network:
         """
         return ph5.network_from_pandas_hdf5(cls, filename)
 
-    def save_hdf5(self, filename, rm_nodes=None):
+    def save_hdf5(self, filename, rm_nodes=None, complevel=None, complib=None):
         """
         Save network data to a Pandas HDF5 file.
 
@@ -227,7 +230,7 @@ class Network:
             be saved as part of the Network.
 
         """
-        ph5.network_to_pandas_hdf5(self, filename, rm_nodes)
+        ph5.network_to_pandas_hdf5(self, filename, rm_nodes, complevel=complevel, complib=complib)
 
     def _node_indexes(self, node_ids):
         # for some reason, merge is must faster than .loc
@@ -356,9 +359,7 @@ class Network:
         """
         if len(nodes_a) != len(nodes_b):
             raise ValueError(
-                "Origin and destination counts don't match: {}, {}".format(
-                    len(nodes_a), len(nodes_b)
-                )
+                f"Origin and destination counts don't match: {len(nodes_a)}, {len(nodes_b)}"
             )
 
         # map to internal node indexes
@@ -431,16 +432,17 @@ class Network:
 
         imp_num = self._imp_name_to_num(imp_name)
 
-        len = self.net.shortest_path_distance(node_a, node_b, imp_num)
+        _len = self.net.shortest_path_distance(node_a, node_b, imp_num)
 
-        if len == 4294967.295:
+        if _len == 4294967.295:
             warnings.warn(
-                "Unsigned integer: shortest path distance is trying to be calculated between\
-                external %s and %s unconntected nodes"
-                % (node_a, node_b)
+                "Unsigned integer: shortest path distance is trying to be calculated "
+                f"between external {node_a} and {node_b} unconntected nodes",
+                UserWarning,
+                stacklevel=2,
             )
 
-        return len
+        return _len
 
     def shortest_path_lengths(self, nodes_a, nodes_b, imp_name=None):
         """
@@ -465,9 +467,7 @@ class Network:
         """
         if len(nodes_a) != len(nodes_b):
             raise ValueError(
-                "Origin and destination counts don't match: {}, {}".format(
-                    len(nodes_a), len(nodes_b)
-                )
+                f"Origin and destination counts don't match: {len(nodes_a)}, {len(nodes_b)}"
             )
 
         # map to internal node indexes
@@ -482,9 +482,10 @@ class Network:
             unconnected_idx = [i for i, v in enumerate(lens) if v == 4294967.295]
             unconnected_nodes = [(nodes_a[i], nodes_b[i]) for i in unconnected_idx]
             warnings.warn(
-                "Unsigned integer: shortest path distance is trying to be calculated \
-                between the following external unconnected nodes: %s"
-                % (unconnected_nodes)
+                "Unsigned integer: shortest path distance is trying to be calculated "
+                f"between the following external unconnected nodes: {unconnected_nodes}",
+                UserWarning,
+                stacklevel=2,
             )
 
         return lens
@@ -533,9 +534,7 @@ class Network:
         df = df.dropna(how="any")
         newl = len(df)
         if length - newl > 0:
-            print(
-                "Removed %d rows because they contain missing values" % (length - newl)
-            )
+            print(f"Removed {length - newl} rows because they contain missing values")
 
         self.variable_names.add(name)
 
@@ -600,13 +599,13 @@ class Network:
         clean_result = pd.concat(
             [
                 pd.DataFrame(r, columns=["destination", imp_name]).assign(source=ix)
-                for r, ix in zip(raw_result, nodes)
+                for r, ix in zip(raw_result, nodes, strict=True)
             ]
         )[["source", "destination", imp_name]]
         return (
             clean_result.drop_duplicates(subset=["source", "destination"])
             .reset_index(drop=True)
-            .query("{} <= {}".format(imp_name, radius))
+            .query(f"{imp_name} <= {radius}")
         )
 
     def _imp_name_to_num(self, imp_name):
@@ -623,7 +622,13 @@ class Network:
         return self.impedance_names.index(imp_name)
 
     def aggregate(
-        self, distance, type="sum", decay="linear", imp_name=None, name="tmp"
+        self,
+        distance,
+        func="sum",
+        decay="linear",
+        imp_name=None,
+        name="tmp",
+        type=None,  # noqa: A002 - `type` builtin -- marker for removal
     ):
         """
         Aggregate information for every source node in the network - this is
@@ -640,7 +645,7 @@ class Network:
             weight. This will usually be a distance unit in meters however
             if you have customized the impedance this could be in other
             units such as utility or time etc.
-        type : string, optional (default 'sum')
+        func : string, optional (default 'sum')
             The type of aggregation: 'mean' (with 'ave', 'avg', 'average'
             as aliases), 'std' (or 'stddev'), 'sum', 'count', 'min', 'max',
             'med' (or 'median'), '25pct', or '75pct'. (Quantiles are
@@ -679,18 +684,28 @@ class Network:
             node in the network.
         """
 
+        # 'type' marker for removal -- remove after extended deprecation [2026-01]
+        if type and isinstance(type, str):
+            warnings.warn(
+                "The 'type' keyword is deprecated in favor of 'func' "
+                "and it will be removed in the future.",
+                FutureWarning,
+                stacklevel=2,
+            )
+            func = type
+
         imp_num = self._imp_name_to_num(imp_name)
-        type = type.lower()
+        func = func.lower()
 
         # Resolve aliases
-        if type in ["ave", "avg", "average"]:
-            type = "mean"
+        if func in ["ave", "avg", "average"]:
+            func = "mean"
 
-        if type in ["stddev"]:
-            type = "std"
+        if func in ["stddev"]:
+            func = "std"
 
-        if type in ["med"]:
-            type = "median"
+        if func in ["med"]:
+            func = "median"
 
         assert (
             name in self.variable_names
@@ -699,7 +714,7 @@ class Network:
         res = self.net.get_all_aggregate_accessibility_variables(
             distance,
             name,
-            type,
+            func,
             decay,
             imp_num,
         )
@@ -708,7 +723,16 @@ class Network:
 
     def get_node_ids(self, x_col, y_col, mapping_distance=None):
         """
-        Assign node_ids to data specified by x_col and y_col.
+        Assign ID of the nearest node to data specified by x_col and y_col.
+
+        Returns a Pandas Series of ``node_ids`` for each x, y in the
+        input data, representing the nearest node in the Euclidean space.
+        The index is the same as the indexes of the
+        x, y input data, and the values are the mapped ``node_ids``.
+        If mapping distance is not passed and if there are no NaNs in the
+        x, y data, this will be the same length as the x, y data.
+        If the mapping is imperfect, this function returns all the
+        input x, y's that were successfully mapped to ``node_ids``.
 
         Parameters
         ----------
@@ -717,25 +741,17 @@ class Network:
             location of dataset.
         y_col : pandas.Series (float)
             A Pandas Series where values specify the y (e.g. latitude)
-            location of dataset.  x_col and y_col should use the same index.
+            location of dataset.  ``x_col`` and ``y_col`` should use the same index.
         mapping_distance : float, optional
-            The maximum distance that will be considered a match between the
-            x, y data and the nearest node in the network.  This will usually
-            be a distance unit in meters however if you have customized the
-            impedance this could be in other units such as utility or time
-            etc. If not specified, every x, y coordinate will be mapped to
-            the nearest node.
+            The maximum distance in Euclidean space that will be considered a match
+            between the x, y data and the nearest node in the network. This will be
+            a distance unit in the units of x, y and node coordinates (usually meters).
+            If not specified, every x, y coordinate will be mapped to the nearest node.
 
         Returns
         -------
         node_ids : pandas.Series (int)
-            Returns a Pandas Series of node_ids for each x, y in the
-            input data. The index is the same as the indexes of the
-            x, y input data, and the values are the mapped node_ids.
-            If mapping distance is not passed and if there are no nans in the
-            x, y data, this will be the same length as the x, y data.
-            If the mapping is imperfect, this function returns all the
-            input x, y's that were successfully mapped to node_ids.
+
         """
         xys = pd.DataFrame({"x": x_col, "y": y_col})
 
@@ -790,15 +806,10 @@ class Network:
         ax : matplotlib.Axes
 
         """
-        try:
-            ModuleNotFoundError  # Python 3.6+
-        except NameError:
-            ModuleNotFoundError = ImportError
 
-        try:
-            import matplotlib
+        if importlib.util.find_spec("matplotlib"):
             import matplotlib.pyplot as plt
-        except (ModuleNotFoundError, RuntimeError):
+        else:
             raise ModuleNotFoundError("pandarm's network.plot() requires Matplotlib")
 
         fig_kwargs = fig_kwargs or {"figsize": (10, 8)}
@@ -822,7 +833,7 @@ class Network:
         elif plot_type == "hexbin":
             plot = plt.hexbin(x, y, C=data.values, **plot_kwargs)
 
-        colorbar = plt.colorbar(plot, **cbar_kwargs)
+        colorbar = plt.colorbar(plot, **cbar_kwargs)  # noqa: F841 - never used
 
         plt.show()
 
@@ -961,7 +972,7 @@ class Network:
 
         if include_poi_ids:
             df2 = pd.DataFrame(poi_ids, index=self.node_ids)
-            df2.columns = ["poi%d" % i for i in range(1, num_pois + 1)]
+            df2.columns = [f"poi{i}" for i in range(1, num_pois + 1)]
             for col in df2.columns:
                 # if this is still all working according to plan at this point
                 # the great magic trick is now to turn the integer position of
@@ -1010,7 +1021,7 @@ class Network:
         self.set(self.node_ids.to_series(), name="counter")
 
         # count nodes within impedance range
-        agg = self.aggregate(impedance, type="count", imp_name=imp_name, name="counter")
+        agg = self.aggregate(impedance, func="count", imp_name=imp_name, name="counter")
 
         return np.array(agg[agg < count].index)
 
