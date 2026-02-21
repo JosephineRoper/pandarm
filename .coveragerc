@@ -1,4 +1,6 @@
 [run]
 omit =
-    pandarm/tests/*
     pandarm/src/*
+
+include =
+    pandarm/
