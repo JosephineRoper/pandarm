@@ -76,7 +76,6 @@
            --cov=pandarm \
            --cov-report=term-missing \
            --cov-report xml:coverage.xml \
-           --debug=trace
 
        - name: codecov
          uses: codecov/codecov-action@v5
