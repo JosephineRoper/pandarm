@@ -69,7 +69,7 @@
 
        - name: run tests
          run: |
-           coverage run -m pytest tests \
+           pytest tests \
            -v \
            -r a \
            --color yes \
