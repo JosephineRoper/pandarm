@@ -1,4 +1,9 @@
 [run]
+
+source = pandarm/
+
+[report]
+
 omit =
     pandarm/src/*
 
