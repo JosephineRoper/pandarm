@@ -1,9 +1,6 @@
 import pandarm.network as pdna
 
 net = pdna.Network.from_hdf5("tests/uci_net.h5")
-print(net.nodes_df.sample(1).index)
-print(net.nodes_df.sample(1).index)
-
 o_node = 3710893961
 d_node = 6556054235
 
