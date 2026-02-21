@@ -73,10 +73,9 @@
            -v \
            -r a \
            --color yes \
-           --cov-append \
+           --cov=pandarm \
            --cov-report term-missing \
            --cov-report xml \
-           --cov-context=test
 
        - name: codecov
          uses: codecov/codecov-action@v5
