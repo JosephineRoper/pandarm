@@ -96,7 +96,9 @@ class Network:
         # in the c extension are actually indexes ordered from 0 to numnodes-1
         # node IDs are thus translated back and forth in the python layer,
         # which allows non-integer node IDs as well
-        self.node_idx = pd.Series(np.arange(len(nodes_df), dtype=np.int64), index=nodes_df.index)
+        self.node_idx = pd.Series(
+            np.arange(len(nodes_df), dtype=np.int64), index=nodes_df.index
+        )
 
         edges = pd.concat(
             [self._node_indexes(edges_df["from"]), self._node_indexes(edges_df["to"])],
@@ -117,7 +119,12 @@ class Network:
 
     @classmethod
     def from_gdf(
-        cls, gdf, network_type="walk", twoway=False, add_travel_times=False, default_speeds=None
+        cls,
+        gdf,
+        network_type="walk",
+        twoway=False,
+        add_travel_times=False,
+        default_speeds=None,
     ):
         """Create a pandarm.Network object from a geodataframe (via OSMnx graph).
 
@@ -160,7 +167,9 @@ class Network:
         ImportError
             requires `osmnx`, raises if module not available
         """
-        return _net_from_gdf(cls, gdf, network_type, twoway, add_travel_times, default_speeds)
+        return _net_from_gdf(
+            cls, gdf, network_type, twoway, add_travel_times, default_speeds
+        )
 
     def to_crs(self, output_crs, input_crs=None):
         """Reproject a pandarm.Network object into another coordinate system.
@@ -293,6 +302,39 @@ class Network:
         # map back to external node IDs
         return self.node_ids.values[path]
 
+    def shortest_path_geometry(self, node_a, node_b, imp_name=None):
+        """Return the path from node_a to node_b as a geodataframe
+
+        Parameters
+        ----------
+        node_a : int, str
+            index of origin node in the Network
+        node_b : int, str
+            index of destination node in the Network
+        imp_name : str, optional
+            name of the Network impedance to use, by default None
+
+        Returns
+        -------
+        gpd.GeoDataFrame
+            dataframe of line geometries representing the shortest path from node_a to node_b
+
+        Raises
+        ------
+        ValueError
+            fails if geometry column not present in the edges_df table
+        """
+        if not hasattr(self.edges_df, "geometry"):
+            raise ValueError(
+                "Cannot construct path because no edge geometry is present in the `edge_df` table"
+            )
+
+        path_nodes = self.shortest_path(node_a, node_b, imp_name)
+        geoms = self.edges_df.copy()
+        path_geom = _nodelist_to_path(path_nodes, geoms)
+
+        return path_geom
+
     def shortest_paths(self, nodes_a, nodes_b, imp_name=None):
         """
         Vectorized calculation of shortest paths. Accepts a list of origins
@@ -330,6 +372,35 @@ class Network:
 
         # map back to external node ids
         return [self.node_ids.values[p] for p in paths]
+
+    def shortest_path_geoms(self, nodes_a, nodes_b, imp_name=None):
+        """Return geometric representation of the shortest path between pairs of nodes as a geodataframe
+
+        Parameters
+        ----------
+        nodes_a : list-like of origin node_ids
+            array of origin node_ids
+        nodes_b : list_like of destination node_ids
+            array of destination node_ids
+        imp_name : str, optional
+            name of impedance column in the Network, by default None
+
+        Returns
+        -------
+        gpd.GeoDataFrame
+            dataframe of line geometries representing each pair of node_a and node_b
+        """
+        paths = self.shortest_paths(nodes_a, nodes_b, imp_name)
+
+        geoms = self.edges_df.copy()
+
+        all_paths = []
+        for i, row in enumerate(paths):
+            df = _nodelist_to_path(row, geoms)
+            df["path_id"] = i
+            all_paths.append(df)
+        all_paths = pd.concat(all_paths)
+        return all_paths
 
     def shortest_path_length(self, node_a, node_b, imp_name=None):
         """
@@ -539,12 +610,14 @@ class Network:
 
     def _imp_name_to_num(self, imp_name):
         if imp_name is None:
-            assert len(self.impedance_names) == 1, (
-                "must pass impedance name if there are multiple impedances set"
-            )
+            assert (
+                len(self.impedance_names) == 1
+            ), "must pass impedance name if there are multiple impedances set"
             imp_name = self.impedance_names[0]
 
-        assert imp_name in self.impedance_names, "An impedance with that namewas not found"
+        assert (
+            imp_name in self.impedance_names
+        ), "An impedance with that namewas not found"
 
         return self.impedance_names.index(imp_name)
 
@@ -634,7 +707,9 @@ class Network:
         if func in ["med"]:
             func = "median"
 
-        assert name in self.variable_names, "A variable with that name has not yet been initialized"
+        assert (
+            name in self.variable_names
+        ), "A variable with that name has not yet been initialized"
 
         res = self.net.get_all_aggregate_accessibility_variables(
             distance,
@@ -887,7 +962,9 @@ class Network:
 
         imp_num = self._imp_name_to_num(imp_name)
 
-        dists, poi_ids = self.net.find_all_nearest_pois(distance, num_pois, category, imp_num)
+        dists, poi_ids = self.net.find_all_nearest_pois(
+            distance, num_pois, category, imp_num
+        )
         dists[dists == -1] = max_distance
 
         df = pd.DataFrame(dists, index=self.node_ids)
@@ -947,3 +1024,16 @@ class Network:
         agg = self.aggregate(impedance, func="count", imp_name=imp_name, name="counter")
 
         return np.array(agg[agg < count].index)
+
+
+def _nodelist_to_path(path_nodes, geoms):
+    geoms = geoms[
+        (geoms["from"].isin(path_nodes)) & (geoms["to"].isin(path_nodes))
+    ].copy()
+    path = geoms.groupby(["from", "to"])[["length"]].min().reset_index()
+    idxer = path.set_index(["from", "to", "length"]).index
+
+    geoms = geoms.set_index(["from", "to", "length"])
+    path_geom = geoms.loc[geoms.index.isin(idxer)].copy()
+
+    return path_geom

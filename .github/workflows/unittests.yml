@@ -65,7 +65,7 @@
          run: 'python -c "import geopandas; geopandas.show_versions();"'
 
        - name: install package
-         run: 'pip install . --no-deps'
+         run: 'pip install -e . --no-deps'
 
        - name: run tests
          run: |
@@ -74,10 +74,8 @@
            -r a \
            --color yes \
            --cov=pandarm \
-           --cov-append \
-           --cov-report term-missing \
-           --cov-report xml \
-           --cov-context=test
+           --cov-report=term-missing \
+           --cov-report xml:coverage.xml \
 
        - name: codecov
          uses: codecov/codecov-action@v5

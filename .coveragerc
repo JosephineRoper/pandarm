@@ -1,4 +1,15 @@
+[paths]
+source =
+    ../pandarm
+    */site-packages/pandarm
+
 [run]
-omit =
-    pandarm/tests/*
-    pandarm/src/*
+branch = true
+parallel = true
+source =
+    pandarm
+    .
+
+[report]
+show_missing = true
+precision = 2
