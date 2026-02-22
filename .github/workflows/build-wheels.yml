@@ -9,6 +9,9 @@ on:
 jobs:
   build_wheels:
     name: Build and publish wheels
+    permissions:
+      id-token: write  # MANDATORY for trusted publishing to PyPI
+      contents: write  # MANDATORY for the Github release action
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -53,9 +56,6 @@ jobs:
 
       - name: Publish to PyPI
         if: startsWith(github.ref, 'refs/tags/')
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         shell: bash -l {0}
         run: |
           twine upload wheelhouse/*
