@@ -624,7 +624,7 @@ class Network:
             nodes reachable within this distance. This will usually be a
             distance unit in meters however if you have customized the
             impedance (using the ``imp_name`` option) this could be in other
-            units such as utility or time.
+            units such as utility or time. Radius 0 is treated as infinity.
         imp_name : string, optional
             The impedance name to use for the query on this network.
             Must be one of the impedance names passed in the constructor of
