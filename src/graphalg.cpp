@@ -1,6 +1,7 @@
 #include "graphalg.h"
 #include <math.h>
 #include <cstdint>
+#include <limits>
 
 namespace MTC {
 namespace accessibility {
@@ -10,10 +11,10 @@ Graphalg::Graphalg(
     this->numnodes = numnodes;
 
     int num = omp_get_max_threads();
-    
+
     FILE_LOG(logINFO) << "Generating contraction hierarchies with "
                       << num << " threads.\n";
-    
+
     ch = CH::ContractionHierarchies(num);
 
     vector<CH::Node> nv;
@@ -27,7 +28,7 @@ Graphalg::Graphalg(
 
     FILE_LOG(logINFO) << "Setting CH node vector of size "
                       << nv.size() << "\n";
-	
+
     ch.SetNodeVector(nv);
 
     vector<CH::Edge> ev;
@@ -40,7 +41,7 @@ Graphalg::Graphalg(
 
     FILE_LOG(logINFO) << "Setting CH edge vector of size "
                       << ev.size() << "\n";
-    
+
     ch.SetEdgeVector(ev);
     ch.RunPreprocessing();
 }
@@ -93,6 +94,54 @@ void Graphalg::Range(int src, double maxdist, int threadNum,
         node.second = tmp[i].second/DISTANCEMULTFACT;
         ResultingNodes.push_back(node);
     }
+}
+
+
+DistanceVec
+Graphalg::KNearest(int src, int k, double max_radius, int threadNum) {
+    // When max_radius <= 0 (unlimited), use iterative radius doubling so we
+    // only traverse a small local neighbourhood rather than the whole network.
+    // Start at 500 m and double until k non-self neighbours are found or the
+    // safe overflow cap (4 000 km) is reached.
+    const double UNLIMITED_CAP = 4000000.0;
+    const double INITIAL_RADIUS = 500.0;
+
+    auto collect = [&](double radius) -> DistanceVec {
+        DistanceVec nodes;
+        Range(src, radius, threadNum, nodes);
+        // Remove source node (distance == 0)
+        nodes.erase(
+            std::remove_if(nodes.begin(), nodes.end(),
+                           [src](const std::pair<NodeID, float> &p) {
+                               return static_cast<int>(p.first) == src;
+                           }),
+            nodes.end());
+        return nodes;
+    };
+
+    DistanceVec all_nodes;
+    if (max_radius <= 0.0) {
+        double r = INITIAL_RADIUS;
+        while (r <= UNLIMITED_CAP) {
+            all_nodes = collect(r);
+            if (static_cast<int>(all_nodes.size()) >= k) break;
+            if (r >= UNLIMITED_CAP) break;
+            r = std::min(r * 2.0, UNLIMITED_CAP);
+        }
+    } else {
+        all_nodes = collect(max_radius);
+    }
+
+    // Partial sort: only fully sort the first k elements — O(n log k) vs O(n log n)
+    int take = std::min(k, static_cast<int>(all_nodes.size()));
+    std::partial_sort(all_nodes.begin(), all_nodes.begin() + take, all_nodes.end(),
+                      [](const std::pair<NodeID, float> &a,
+                         const std::pair<NodeID, float> &b) {
+                          return a.second < b.second;
+                      });
+    all_nodes.resize(take);
+
+    return all_nodes;
 }
 
 

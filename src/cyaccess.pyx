@@ -31,6 +31,7 @@ cdef extern from "accessibility.h" namespace "MTC::accessibility":
         double Distance(int64_t, int64_t, int64_t)
         vector[double] Distances(vector[int64_t], vector[int64_t], int64_t)
         vector[vector[pair[int64_t, float]]] Range(vector[int64_t], float, int64_t, vector[int64_t])
+        vector[vector[pair[int64_t, float]]] KNearestNodes(vector[int64_t], int64_t, double, int64_t, vector[int64_t])
         void precomputeRangeQueries(double)
 
 
@@ -47,11 +48,11 @@ cdef np.ndarray[double, ndim=2] convert_2D_vector_to_array_dbl(
         vector[vector[double]] vec):
     if vec.size() == 0:
         return np.empty((0, 0), dtype=np.float64)
-    
+
     cdef int64_t rows = vec.size()
     cdef int64_t cols = vec[0].size() if rows > 0 else 0
     cdef np.ndarray[double, ndim=2] arr = np.empty((rows, cols), dtype=np.float64)
-    
+
     cdef int64_t i, j
     for i in range(rows):
         if vec[i].size() != cols:
@@ -65,11 +66,11 @@ cdef np.ndarray[int64_t, ndim=2] convert_2D_vector_to_array_int(
         vector[vector[int64_t]] vec):
     if vec.size() == 0:
         return np.empty((0, 0), dtype=np.int64)
-    
+
     cdef int64_t rows = vec.size()
     cdef int64_t cols = vec[0].size() if rows > 0 else 0
     cdef np.ndarray[int64_t, ndim=2] arr = np.empty((rows, cols), dtype=np.int64)
-    
+
     cdef int64_t i, j
     for i in range(rows):
         if vec[i].size() != cols:
@@ -121,7 +122,7 @@ cdef class cyaccess:
         category - the category name
         node_ids - an array of nodeids which are locations where this poi occurs
         """
-        
+
         self.access.initializeCategory(maxdist, maxitems, category, node_ids)
 
     def find_all_nearest_pois(
@@ -191,7 +192,7 @@ cdef class cyaccess:
         """
         return self.access.Route(srcnode, destnode, impno)
 
-    def shortest_paths(self, np.ndarray[int64_t] srcnodes, 
+    def shortest_paths(self, np.ndarray[int64_t] srcnodes,
             np.ndarray[int64_t] destnodes, int64_t impno=0):
         """
         srcnodes - node ids of origins
@@ -208,7 +209,7 @@ cdef class cyaccess:
         """
         return self.access.Distance(srcnode, destnode, impno)
 
-    def shortest_path_distances(self, np.ndarray[int64_t] srcnodes, 
+    def shortest_path_distances(self, np.ndarray[int64_t] srcnodes,
             np.ndarray[int64_t] destnodes, int64_t impno=0):
         """
         srcnodes - node ids of origins
@@ -216,11 +217,11 @@ cdef class cyaccess:
         impno - impedance id
         """
         return self.access.Distances(srcnodes, destnodes, impno)
-    
+
     def precompute_range(self, double radius):
         self.access.precomputeRangeQueries(radius)
 
-    def nodes_in_range(self, vector[int64_t] srcnodes, float radius, int64_t impno, 
+    def nodes_in_range(self, vector[int64_t] srcnodes, float radius, int64_t impno,
             np.ndarray[int64_t] ext_ids):
         """
         srcnodes - node ids of origins
@@ -229,3 +230,32 @@ cdef class cyaccess:
         ext_ids - all node ids in the network
         """
         return self.access.Range(srcnodes, radius, impno, ext_ids)
+
+    def k_nearest_nodes(self, vector[int64_t] srcnodes, int64_t k, double max_radius,
+            np.ndarray[int64_t] ext_ids, int64_t impno=0):
+        """
+        srcnodes - node ids of origins
+        k - number of nearest nodes to return per source
+        max_radius - maximum travel distance to search within
+        ext_ids - all node ids in the network
+        impno - the impedance id to use (default 0)
+
+        Returns (dists, ids): two 2-D float64/int64 arrays of shape
+        (len(srcnodes), k), containing network distances and node IDs of
+        the k nearest neighbours, sorted by ascending distance.
+        """
+        cdef vector[vector[pair[int64_t, float]]] raw = \
+            self.access.KNearestNodes(srcnodes, k, max_radius, impno, ext_ids)
+
+        cdef int64_t rows = raw.size()
+        cdef int64_t cols = k
+        cdef np.ndarray[double, ndim=2] dists = np.full((rows, cols), np.inf, dtype=np.float64)
+        cdef np.ndarray[int64_t, ndim=2] ids = np.full((rows, cols), -1, dtype=np.int64)
+        cdef int64_t i, j
+
+        for i in range(rows):
+            for j in range(<int64_t>raw[i].size()):
+                ids[i, j] = raw[i][j].first
+                dists[i, j] = raw[i][j].second
+
+        return dists, ids
