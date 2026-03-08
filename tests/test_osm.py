@@ -30,7 +30,6 @@ def test_save_hdf_with_geoms(osm_network, tmpfile):
     with pd.HDFStore(tmpfile) as store:
         assert store["nodes"].shape[0] >= 42691
 
-    with pytest.no_crs_warning:
-        roundtrip_net = pdna.Network.from_hdf5(tmpfile)
+    roundtrip_net = pdna.Network.from_hdf5(tmpfile)
 
     assert_frame_equal(osm_network.nodes_df, roundtrip_net.nodes_df)
