@@ -149,7 +149,10 @@ def project_network(network, output_crs=None, input_crs=4326):
         edge_weights=edges[[network.impedance_names[0]]],
         twoway=network._twoway,
     )
-    net.edges_df = gpd.GeoDataFrame(net.edges_df, geometry=edges.geometry, crs=output_crs)
+
+    if "geometry" in edges.columns:
+        net.edges_df = gpd.GeoDataFrame(net.edges_df, geometry=edges.geometry, crs=output_crs)
+
     net.nodes_df = gpd.GeoDataFrame(net.nodes_df, geometry=nodes.geometry, crs=output_crs)
 
     return net
