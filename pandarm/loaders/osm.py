@@ -137,7 +137,7 @@ def project_network(network, output_crs=None, input_crs=4326):
     #  take original x,y coordinates and convert into geopandas.Series, then reproject
     nodes = _reproject_osm_nodes(network.nodes_df, input_crs, output_crs)
     edges = network.edges_df.copy()
-    if "geometry" in edges.columns:
+    if isinstance(edges, gpd.GeoDataFrame):
         edges = edges.to_crs(output_crs)
 
     #  reinstantiate the network (needs to rebuild the tree)
@@ -148,8 +148,12 @@ def project_network(network, output_crs=None, input_crs=4326):
         edge_to=edges["to"],
         edge_weights=edges[[network.impedance_names[0]]],
         twoway=network._twoway,
+        crs=output_crs,
     )
-    net.edges_df = gpd.GeoDataFrame(net.edges_df, geometry=edges.geometry, crs=output_crs)
+
+    if isinstance(edges, gpd.GeoDataFrame):
+        net.edges_df = gpd.GeoDataFrame(net.edges_df, geometry=edges.geometry, crs=output_crs)
+
     net.nodes_df = gpd.GeoDataFrame(net.nodes_df, geometry=nodes.geometry, crs=output_crs)
 
     return net
