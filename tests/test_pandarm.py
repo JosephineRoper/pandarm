@@ -245,6 +245,50 @@ def test_non_float_node_values(sample_osm):
                 assert s.describe()["std"] > 0
 
 
+def test_exp_par_default(sample_osm):
+    # test that exponential decay parameter defaults to 1/distance
+    net = sample_osm
+
+    ssize = 75
+    np.random.seed(1)
+    net.set(random_connected_nodes(sample_osm, ssize), variable=random_data(ssize))
+
+    distance = 2000
+    implicit = net.aggregate(distance, func="sum", decay="exp")
+    explicit = net.aggregate(distance, func="sum", decay="exp", exp_par=1 / distance)
+
+    assert_allclose(implicit.values, explicit.values)
+
+
+def test_exp_par_changes_exponential_decay(sample_osm):
+    net = sample_osm
+
+    ssize = 75
+    np.random.seed(2)
+    net.set(random_connected_nodes(sample_osm, ssize), variable=random_data(ssize))
+
+    distance = 2000
+    low_decay = net.aggregate(distance, func="sum", decay="exp", exp_par=0.0001)
+    high_decay = net.aggregate(distance, func="sum", decay="exp", exp_par=0.01)
+
+    assert np.all(high_decay.values <= low_decay.values + 1e-12)
+    assert np.any(high_decay.values < low_decay.values - 1e-12)
+
+
+def test_exp_par_ignored_for_non_exponential_decay(sample_osm):
+    net = sample_osm
+
+    ssize = 75
+    np.random.seed(3)
+    net.set(random_connected_nodes(sample_osm, ssize), variable=random_data(ssize))
+
+    distance = 2000
+    linear_a = net.aggregate(distance, func="sum", decay="linear", exp_par=0.0001)
+    linear_b = net.aggregate(distance, func="sum", decay="linear", exp_par=10.0)
+
+    assert_allclose(linear_a.values, linear_b.values)
+
+
 def test_missing_nodeid(sample_osm):
     node_ids = random_node_ids(sample_osm, 50)
     # non-existing value
