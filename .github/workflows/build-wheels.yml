@@ -47,32 +47,32 @@ jobs:
 
       # ── Linux ──────────────────────────────────────────────────────────────
       # Install OpenMP inside the manylinux container before building.
-      # auditwheel then bundles libgomp into the wheel automatically.
+      # The shared lib ends up bundled into the wheel by auditwheel automatically.
       CIBW_BEFORE_BUILD_LINUX: >
         yum install -y libgomp || apt-get install -y libgomp1 || true
 
       # ── macOS ──────────────────────────────────────────────────────────────
-      # CIBW_ENVIRONMENT_MACOS does NOT shell-expand $(...) at parse time, so
-      # we resolve the libomp prefix in a dedicated step (below) and write it
-      # to GITHUB_ENV. Those variables are then available here as literals.
-      CIBW_BEFORE_BUILD_MACOS: brew install libomp || true
-
-      # LIBOMP_PREFIX is set in the "Resolve libomp prefix" step below.
+      # 1. Install libomp via Homebrew so the compiler can find it.
+      # 2. Point the compiler and linker at it explicitly so delocate can see
+      #    the dylib at a known Homebrew prefix and bundle it into the wheel.
+      CIBW_BEFORE_BUILD_MACOS: >
+        brew install libomp
       CIBW_ENVIRONMENT_MACOS: >
         CC=clang
         CXX=clang++
-        LDFLAGS="-L$LIBOMP_PREFIX/lib"
-        CPPFLAGS="-I$LIBOMP_PREFIX/include"
-        DYLD_LIBRARY_PATH="$LIBOMP_PREFIX/lib"
+        LDFLAGS="-L$(brew --prefix libomp)/lib"
+        CPPFLAGS="-I$(brew --prefix libomp)/include"
+        DYLD_LIBRARY_PATH="$(brew --prefix libomp)/lib"
 
-      # delocate bundles libomp.dylib into the wheel so users don't need it.
+      # Force delocate to bundle libomp into the wheel so it is self-contained.
       CIBW_REPAIR_WHEEL_COMMAND_MACOS: >
         delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}
 
       # ── Windows ────────────────────────────────────────────────────────────
       # MSVC ships its own OpenMP runtime (vcomp); nothing extra needed.
       # delvewheel bundles the runtime DLLs automatically.
-      CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
+      CIBW_BEFORE_BUILD_WINDOWS: >
+        pip install delvewheel
       CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >
         delvewheel repair -w {dest_dir} {wheel}
 
@@ -85,14 +85,6 @@ jobs:
         uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
-
-      # Resolve the Homebrew libomp prefix and export it so CIBW_ENVIRONMENT_MACOS
-      # can reference it as a plain variable (no subshell expansion needed).
-      - name: Resolve libomp prefix (macOS only)
-        if: runner.os == 'macOS'
-        run: |
-          brew install libomp || true
-          echo "LIBOMP_PREFIX=$(brew --prefix libomp)" >> $GITHUB_ENV
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.21
