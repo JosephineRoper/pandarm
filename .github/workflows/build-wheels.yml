@@ -29,10 +29,12 @@ jobs:
           # macOS Intel (x86_64)
           - os: macos-13
             arch: x86_64
+            macosx_deployment_target: "13.0"
 
           # macOS Apple Silicon (arm64)
           - os: macos-latest
             arch: arm64
+            macosx_deployment_target: "15.0"
 
           # Windows x86_64
           - os: windows-latest
@@ -44,6 +46,8 @@ jobs:
       CIBW_BUILD: "cp311-* cp312-* cp313-*"
       CIBW_ARCHS: ${{ matrix.arch }}
       CIBW_BUILD_VERBOSITY: 1
+      # Match Homebrew libomp's minimum OS target so delocate can bundle it.
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx_deployment_target }}
 
       # ── Linux ──────────────────────────────────────────────────────────────
       # Install OpenMP inside the manylinux container before building.
