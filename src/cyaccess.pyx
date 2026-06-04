@@ -170,7 +170,7 @@ cdef class cyaccess:
         aggtyp,
         decay,
         int64_t impno=0,
-        double exp_par=0,
+        double exp_constant=0,
     ):
         """
         radius - search radius
@@ -178,10 +178,10 @@ cdef class cyaccess:
         aggtyp - aggregation type, see docs
         decay - decay type, see docs
         impno - the impedance id to use
-        exp_par - parameter for exponential decay
+        exp_constant - parameter for exponential decay
         """
         ret = self.access.getAllAggregateAccessibilityVariables(
-            radius, category, aggtyp, decay, impno, exp_par)
+            radius, category, aggtyp, decay, impno, exp_constant)
 
         return convert_vector_to_array_dbl(ret)
 

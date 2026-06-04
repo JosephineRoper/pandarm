@@ -309,7 +309,7 @@ Accessibility::getAllAggregateAccessibilityVariables(
     string aggtyp,
     string decay,
     int64_t graphno,
-    float exp_par) {
+    float exp_constant) {
     if (accessibilityVars.find(category) == accessibilityVars.end() ||
         std::find(aggregations.begin(), aggregations.end(), aggtyp)
             == aggregations.end() ||
@@ -331,7 +331,7 @@ Accessibility::getAllAggregateAccessibilityVariables(
             aggtyp,
             decay,
             graphno,
-            exp_par);
+            exp_constant);
     }
     }
     return scores;
@@ -392,7 +392,7 @@ Accessibility::aggregateAccessibilityVariable(
     string aggtyp,
     string decay,
     int64_t gno,
-    float exp_par) {
+    float exp_constant) {
     // I don't know if this is the best way to do this but I
     // I don't want to copy memory in the precompute case - sometimes
     // I need a reference and sometimes not
@@ -436,13 +436,13 @@ Accessibility::aggregateAccessibilityVariable(
     std::function<double(const double &, const float &, const float &, const float &)> sum_function;
 
     if(decay == "exp")
-        sum_function = [](const double &distance, const float &radius, const float &var, const float &exp_par)
-                        { return exp(-exp_par*distance) * var; };
+        sum_function = [](const double &distance, const float &radius, const float &var, const float &exp_constant)
+                        { return exp(-exp_constant*distance) * var; };
     if(decay == "linear")
-        sum_function = [](const double &distance, const float &radius, const float &var, const float &exp_par)
+        sum_function = [](const double &distance, const float &radius, const float &var, const float &exp_constant)
                         { return (1.0-distance/radius) * var; };
     if(decay == "flat")
-        sum_function = [](const double &distance, const float &radius, const float &var, const float &exp_par)
+        sum_function = [](const double &distance, const float &radius, const float &var, const float &exp_constant)
                         { return var; };
 
     for (int64_t i = 0 ; i < distances.size() ; i++) {
@@ -454,7 +454,7 @@ Accessibility::aggregateAccessibilityVariable(
 
         for (int64_t j = 0 ; j < vars[nodeid].size() ; j++) {
             cnt++;  // count items
-            sum += sum_function(distance, radius, vars[nodeid][j], exp_par);
+            sum += sum_function(distance, radius, vars[nodeid][j], exp_constant);
 
             // stddev is always flat
             sumsq += vars[nodeid][j] * vars[nodeid][j];

@@ -628,7 +628,7 @@ class Network:
         decay="linear",
         imp_name=None,
         name="tmp",
-        exp_par=None,
+        exp_constant=None,
         type=None,  # noqa: A002 - `type` builtin -- marker for removal
     ):
         """
@@ -675,8 +675,8 @@ class Network:
             and named by a call to ``set``.  If not specified, the default
             variable name will be used so that the most recent call to set
             without giving a name will be the variable used.
-        exp_par : float, optional
-            This provides the option of setting radius (maximum distance) and exponential decay constant separately. Instead of exp(-1*distance/radius)*var, the function will be exp(-exp_par*distance)*var .
+        exp_constant : float, optional
+            This provides the option of setting radius (maximum distance) and exponential decay constant separately. Instead of exp(-1*distance/radius)*var, the function will be exp(-exp_constant*distance)*var .
 
         Returns
         -------
@@ -716,9 +716,9 @@ class Network:
  
         if decay in ["exponential", "exp"]:
             decay = "exp"
-            if exp_par == None:
+            if exp_constant is None:
                 print("No exponential parameter provided. Exponential parameter will be 1/distance.")
-                exp_par = 1/distance
+                exp_constant = 1/distance
 
         res = self.net.get_all_aggregate_accessibility_variables(
             distance,
@@ -726,7 +726,7 @@ class Network:
             func,
             decay,
             imp_num,
-            exp_par if decay == "exp" else 0.0,
+            exp_constant if decay == "exp" else 0.0,
         )
 
         return pd.Series(res, index=self.node_ids)
