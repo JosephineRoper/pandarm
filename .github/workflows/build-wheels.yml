@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - "v*"       # v1.2.3 → PyPI, v1.2.3a1/b1/rc1 → TestPyPI
-      - "test-*"   # test-anything → build + artifact only, nothing published
   workflow_dispatch:
 
 jobs:
@@ -43,7 +42,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     env:
-      CIBW_BUILD: "cp311-* cp312-* cp313-*"
+      CIBW_BUILD: "cp311-* cp312-* cp313-* cp314-*"
       CIBW_ARCHS: ${{ matrix.arch }}
       CIBW_BUILD_VERBOSITY: 1
       # Match Homebrew libomp's minimum OS target so delocate can bundle it.
