@@ -80,7 +80,7 @@ jobs:
         delvewheel repair -w {dest_dir} {wheel}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Enable QEMU for Linux aarch64 cross-compilation.
       - name: Set up QEMU (Linux aarch64 only)
