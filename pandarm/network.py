@@ -658,7 +658,6 @@ class Network:
 
             *Additional notes:* see ``aggregateAccessibilityVariable`` in
             accessibility.cpp to read through the code that applies decays.
-            The exponential decay function is exp(-1*distance/radius)*var.
             The decay setting only operates on 'sum' and 'mean' aggregations.
             If you apply decay to a 'mean', the result will NOT be a weighted
             average; it will be the mean of the post-decay values. (So for a
@@ -676,7 +675,9 @@ class Network:
             variable name will be used so that the most recent call to set
             without giving a name will be the variable used.
         exp_constant : float, optional
-            This provides the option of setting radius (maximum distance) and exponential decay constant separately. Instead of exp(-1*distance/radius)*var, the function will be exp(-exp_constant*distance)*var .
+            This provides the option of setting maximum distance (radius) and
+            exponential decay constant separately. If this constant is not provided,
+            it defaults to 1/radius (the behaviour in previous versions of Pandana).
 
         Returns
         -------
@@ -717,7 +718,7 @@ class Network:
         if decay in ["exponential", "exp"]:
             decay = "exp"
             if exp_constant is None:
-                print("No exponential parameter provided. Exponential parameter will be 1/distance.")
+                print("No exponential parameter provided. Exponential parameter will be 1/radius.")
                 exp_constant = 1/distance
 
         res = self.net.get_all_aggregate_accessibility_variables(
