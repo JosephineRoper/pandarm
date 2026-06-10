@@ -23,7 +23,12 @@ if sys.platform.startswith("darwin"):  # Mac
     # try to detect if people are using another alternative like Homebrew.
 
     if "CC" in os.environ:
-        extra_compile_args += ["-fopenmp"]
+        extra_compile_args += ["-Xpreprocessor", "-fopenmp"]
+        extra_link_args += ["-lomp"]
+        # Respect any library path injected by cibuildwheel via LDFLAGS
+        ldflags = os.environ.get("LDFLAGS", "")
+        if ldflags:
+            extra_link_args += ldflags.split()
         print(
             "Attempting pandarm compilation with OpenMP multi-threading "
             "support, with user-specified compiler:\n{}".format(os.environ["CC"])
