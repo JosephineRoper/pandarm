@@ -84,7 +84,7 @@ Accessibility::precomputeRangeQueries(float radius) {
 
 
 vector<vector<pair<int64_t, float>>>
-Accessibility::Range(vector<int64_t> srcnodes, float radius, int64_t graphno, 
+Accessibility::Range(vector<int64_t> srcnodes, float radius, int64_t graphno,
                      vector<int64_t> ext_ids) {
 
     // Set up a mapping between the external node ids and internal ones
@@ -92,7 +92,7 @@ Accessibility::Range(vector<int64_t> srcnodes, float radius, int64_t graphno,
     for (int64_t i = 0; i < ext_ids.size(); i++) {
         int_ids.insert(pair<int64_t, int64_t>(ext_ids[i], i));
     }
-    
+
     // use cached results if available
     vector<DistanceVec> dists(srcnodes.size());
     if (dmsradius > 0 && radius <= dmsradius) {
@@ -108,7 +108,7 @@ Accessibility::Range(vector<int64_t> srcnodes, float radius, int64_t graphno,
                 omp_get_thread_num(), dists[i]);
         }
     }
-    
+
     // todo: check that results are returned from cache correctly
     // todo: check that performing an aggregation creates cache
 
@@ -117,10 +117,38 @@ Accessibility::Range(vector<int64_t> srcnodes, float radius, int64_t graphno,
     for (int64_t i = 0; i < dists.size(); i++) {
         output[i].resize(dists[i].size());
         for (int64_t j = 0; j < dists[i].size(); j++) {
-            output[i][j] = std::make_pair(ext_ids[dists[i][j].first], 
+            output[i][j] = std::make_pair(ext_ids[dists[i][j].first],
                                           dists[i][j].second);
         }
     }
+    return output;
+}
+
+
+vector<vector<pair<int64_t, float>>>
+Accessibility::KNearestNodes(vector<int64_t> srcnodes, int64_t k, double max_radius,
+                             int64_t graphno, vector<int64_t> ext_ids) {
+
+    // Build mapping from external id -> internal index
+    std::unordered_map<int64_t, int64_t> int_ids(ext_ids.size());
+    for (int64_t i = 0; i < (int64_t)ext_ids.size(); i++) {
+        int_ids.insert(pair<int64_t, int64_t>(ext_ids[i], i));
+    }
+
+    vector<vector<pair<int64_t, float>>> output(srcnodes.size());
+
+    #pragma omp parallel
+    #pragma omp for schedule(guided)
+    for (int64_t i = 0; i < (int64_t)srcnodes.size(); i++) {
+        DistanceVec nearest = ga[graphno]->KNearest(
+            int_ids[srcnodes[i]], k, max_radius, omp_get_thread_num());
+
+        output[i].resize(nearest.size());
+        for (int64_t j = 0; j < (int64_t)nearest.size(); j++) {
+            output[i][j] = make_pair(ext_ids[nearest[j].first], nearest[j].second);
+        }
+    }
+
     return output;
 }
 
@@ -141,7 +169,7 @@ Accessibility::Routes(vector<int64_t> sources, vector<int64_t> targets, int64_t 
     #pragma omp parallel
     #pragma omp for schedule(guided)
     for (int64_t i = 0 ; i < n ; i++) {
-        vector<NodeID> ret = this->ga[graphno]->Route(sources[i], targets[i], 
+        vector<NodeID> ret = this->ga[graphno]->Route(sources[i], targets[i],
             omp_get_thread_num());
         routes[i] = vector<int64_t> (ret.begin(), ret.end());
     }
@@ -156,17 +184,17 @@ Accessibility::Distance(int64_t src, int64_t tgt, int64_t graphno) {
 
 
 vector<double>
-Accessibility::Distances(vector<int64_t> sources, vector<int64_t> targets, int64_t graphno) {                       
-    
+Accessibility::Distances(vector<int64_t> sources, vector<int64_t> targets, int64_t graphno) {
+
     int64_t n = std::min(sources.size(), targets.size()); // in case lists don't match
     vector<double> distances(n);
-    
+
     #pragma omp parallel
     #pragma omp for schedule(guided)
     for (int64_t i = 0 ; i < n ; i++) {
         distances[i] = this->ga[graphno]->Distance(
-            sources[i], 
-            targets[i], 
+            sources[i],
+            targets[i],
             omp_get_thread_num());
     }
     return distances;
@@ -217,11 +245,11 @@ Accessibility::findNearestPOIs(int64_t srcnode, float maxradius, unsigned number
         maxradius, number, omp_get_thread_num());
 
     vector<distance_node_pair> distance_node_pairs;
-    std::map<POIKeyType, accessibility_vars_t>::iterator cat_for_pois = 
+    std::map<POIKeyType, accessibility_vars_t>::iterator cat_for_pois =
         accessibilityVarsForPOIs.find(cat);
     if(cat_for_pois == accessibilityVarsForPOIs.end())
         return distance_node_pairs;
-    
+
     accessibility_vars_t &vars = cat_for_pois->second;
 
     /* need to account for the possibility of having

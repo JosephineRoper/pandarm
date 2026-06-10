@@ -529,3 +529,57 @@ def test_nodes_in_range(sample_osm):
     assert (all_distances <= 1).sum() == len(test1.query(f"source == {focus_id}"))
     assert (all_distances <= 5).sum() == len(test5.query(f"source == {focus_id}"))
     assert (all_distances <= 11).sum() == len(test11.query(f"source == {focus_id}"))
+
+
+def test_k_nearest_nodes(sample_osm):
+    net = sample_osm
+
+    np.random.seed(0)
+    ssize = 10
+    x, y = random_x_y(net, ssize)
+    snaps = net.get_node_ids(x, y)
+    k = 5
+
+    result = net.k_nearest_nodes(snaps, k, max_radius=0)
+
+    # Returns a DataFrame with the expected columns
+    assert isinstance(result, pd.DataFrame)
+    assert list(result.columns) == ["source", "destination", "weight"]
+
+    # Each source has at most k rows; sources not in result are isolated nodes
+    counts = result.groupby("source").size()
+    assert (counts <= k).all()
+
+    # No source appears as its own destination
+    assert (result["source"] == result["destination"]).sum() == 0
+
+    # Distances are non-negative
+    assert (result["weight"] >= 0).all()
+
+    # Distances are sorted ascending within each source group
+    for src, group in result.groupby("source"):
+        assert group["weight"].is_monotonic_increasing, (
+            f"Distances not sorted for source {src}"
+        )
+
+    # With a tight radius, results are a subset of the unlimited-radius results
+    result_tight = net.k_nearest_nodes(snaps, k, max_radius=5)
+    assert set(zip(result_tight["source"], result_tight["destination"])).issubset(
+        set(zip(result["source"], result["destination"]))
+    )
+    # Tight-radius distances all respect the bound
+    assert (result_tight["weight"] <= 5).all()
+
+    # Results are consistent with nodes_in_range: the k distances returned by
+    # k_nearest_nodes should equal the k smallest distances from nodes_in_range
+    # (excluding the source itself; comparing distances to be robust to tie-breaking)
+    focus_id = snaps[0]
+    if focus_id in result["source"].values:
+        knn_dists = np.sort(
+            result.loc[result["source"] == focus_id, "weight"].values
+        )
+        nir = net.nodes_in_range([focus_id], radius=2000)
+        nir_others = nir[nir["destination"] != focus_id]
+        nir_top_k_dists = np.sort(nir_others.nsmallest(k, "weight")["weight"].values)
+        assert_allclose(knn_dists, nir_top_k_dists)
+

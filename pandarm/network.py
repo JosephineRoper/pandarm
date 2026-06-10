@@ -608,6 +608,50 @@ class Network:
             .query(f"{imp_name} <= {radius}")
         )
 
+    def k_nearest_nodes(self, nodes, k, max_radius, imp_name=None):
+        """
+        For each source node, return the *k* closest nodes in the network,
+        searching up to *max_radius*.
+
+        Parameters
+        ----------
+        nodes : list-like of ints
+            Source node IDs.
+        k : int
+            Number of nearest nodes to return per source node.
+        max_radius : float
+            Maximum travel distance to search within. Results are limited to
+            nodes reachable within this distance. This will usually be a
+            distance unit in meters however if you have customized the
+            impedance (using the ``imp_name`` option) this could be in other
+            units such as utility or time. Radius 0 is treated as infinity.
+        imp_name : string, optional
+            The impedance name to use for the query on this network.
+            Must be one of the impedance names passed in the constructor of
+            this object. If not specified, there must be only one impedance
+            passed in the constructor, which will be used.
+
+        Returns
+        -------
+        d : pandas.DataFrame
+            A dataframe with columns ``source``, ``destination``, and the
+            impedance name.  Each row represents one of the *k* nearest
+            reachable nodes for the corresponding source, sorted by ascending
+            distance within each source group.
+        """
+        imp_num = self._imp_name_to_num(imp_name)
+        imp_name = self.impedance_names[imp_num]
+        ext_ids = self.node_idx.index.values
+
+        dists, ids = self.net.k_nearest_nodes(nodes, k, max_radius, ext_ids, imp_num)
+        # dists and ids are both (len(nodes), k) arrays
+        rows = []
+        for i, src in enumerate(nodes):
+            for j in range(k):
+                if ids[i, j] != -1:
+                    rows.append((src, ids[i, j], dists[i, j]))
+        return pd.DataFrame(rows, columns=["source", "destination", imp_name])
+
     def _imp_name_to_num(self, imp_name):
         if imp_name is None:
             assert (

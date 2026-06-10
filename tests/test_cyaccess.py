@@ -97,6 +97,24 @@ def test_shortest_path(net):
     assert route.iloc[20] == 345
     assert net.shortest_path_distance(996, 71) == 23
 
+def test_k_nearest_nodes(net, nodes_and_edges):
+    nodes = nodes_and_edges[0]
+    ext_ids = nodes.index.values.astype(np.int64)
+    srcnodes = ext_ids[:5]  # test with first 5 nodes
+    k = 3
+    dists, ids = net.k_nearest_nodes(srcnodes, k, 0, ext_ids)
+    # Check output shapes
+    assert dists.shape == (5, 3)
+    assert ids.shape == (5, 3)
+    # Check that no srcnode is returned as its own neighbor
+    for i in range(5):
+        assert all(ids[i, :] != srcnodes[i])
+    # Check that distances are sorted for each srcnode
+    # (skip rows where no neighbours were found — all-inf rows are trivially sorted)
+    for i in range(5):
+        row = dists[i, :]
+        finite = row[np.isfinite(row)]
+        assert np.all(np.diff(finite) >= 0)
 
 """
 # run this and watch the memory use in activity monitor

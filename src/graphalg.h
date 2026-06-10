@@ -33,6 +33,9 @@ class Graphalg {
     void Range(int src, double maxdist, int threadNum,
                DistanceVec &ResultingNodes);
 
+    // return the k nearest nodes up to max_radius, sorted by distance
+    DistanceVec KNearest(int src, int k, double max_radius, int threadNum = 0);
+
     DistanceMap NearestPOI(const POIKeyType &category, int src, double maxdist,
                            int number, int threadNum = 0);
 

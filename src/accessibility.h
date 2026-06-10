@@ -48,21 +48,26 @@ class Accessibility {
         float exp_constant = 0);
 
     // get nodes with a range for a specific list of source nodes
-    vector<vector<pair<int64_t, float>>> Range(vector<int64_t> srcnodes, float radius, 
+    vector<vector<pair<int64_t, float>>> Range(vector<int64_t> srcnodes, float radius,
                                             int64_t graphno, vector<int64_t> ext_ids);
+
+    // get the k nearest nodes for a list of source nodes
+    vector<vector<pair<int64_t, float>>> KNearestNodes(vector<int64_t> srcnodes, int64_t k,
+                                                       double max_radius, int64_t graphno,
+                                                       vector<int64_t> ext_ids);
 
     // shortest path between two points
     vector<int64_t> Route(int64_t src, int64_t tgt, int64_t graphno = 0);
 
     // shortest path between list of origins and destinations
-    vector<vector<int64_t>> Routes(vector<int64_t> sources, vector<int64_t> targets,  
+    vector<vector<int64_t>> Routes(vector<int64_t> sources, vector<int64_t> targets,
                                int64_t graphno = 0);
 
     // shortest path distance between two points
     double Distance(int64_t src, int64_t tgt, int64_t graphno = 0);
-    
+
     // shortest path distances between list of origins and destinations
-    vector<double> Distances(vector<int64_t> sources, vector<int64_t> targets,  
+    vector<double> Distances(vector<int64_t> sources, vector<int64_t> targets,
                              int64_t graphno = 0);
 
     // precompute the range queries and reuse them
