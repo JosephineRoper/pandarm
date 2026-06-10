@@ -25,7 +25,7 @@ cdef extern from "accessibility.h" namespace "MTC::accessibility":
             float, int64_t, string, int64_t)
         void initializeAccVar(string, vector[int64_t], vector[double])
         vector[double] getAllAggregateAccessibilityVariables(
-            float, string, string, string, int64_t)
+            float, string, string, string, int64_t, float)
         vector[int64_t] Route(int64_t, int64_t, int64_t)
         vector[vector[int64_t]] Routes(vector[int64_t], vector[int64_t], int64_t)
         double Distance(int64_t, int64_t, int64_t)
@@ -170,6 +170,7 @@ cdef class cyaccess:
         aggtyp,
         decay,
         int64_t impno=0,
+        double exp_constant=0,
     ):
         """
         radius - search radius
@@ -177,9 +178,10 @@ cdef class cyaccess:
         aggtyp - aggregation type, see docs
         decay - decay type, see docs
         impno - the impedance id to use
+        exp_constant - parameter for exponential decay
         """
         ret = self.access.getAllAggregateAccessibilityVariables(
-            radius, category, aggtyp, decay, impno)
+            radius, category, aggtyp, decay, impno, exp_constant)
 
         return convert_vector_to_array_dbl(ret)
 
